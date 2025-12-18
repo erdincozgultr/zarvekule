@@ -1,0 +1,20 @@
+package com.zarvekule.audit.enums;
+
+public enum AuditAction {
+
+    USER_BAN,
+    USER_UNBAN,
+    ROLE_CHANGE,
+
+    HOMEBREW_APPROVE,
+    HOMEBREW_REJECT,
+    VENUE_APPROVE,
+    VENUE_REJECT,
+    CAMPAIGN_SUSPEND,
+    CAMPAIGN_DELETE,
+
+    LOGIN_FAILED,
+    SENSITIVE_DATA_ACCESS,
+
+    SYSTEM_CONFIG_CHANGE
+}
