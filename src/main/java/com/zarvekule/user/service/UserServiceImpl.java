@@ -131,6 +131,13 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
+    @Transactional(readOnly = true)
+    public UserResponseDto findByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ApiException("Kullanıcı bulunamadı: " + username, HttpStatus.NOT_FOUND));
+        return userMapper.toResponseDto(user);
+    }
+
     @Override
     @Transactional
     public void banUser(String adminUsername, Long userId, String reason) {

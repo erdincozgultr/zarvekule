@@ -12,6 +12,8 @@ public interface UserService extends UserDetailsService {
 
     UserResponseDto findById(Long id);
 
+    UserResponseDto findByUsername(String username);
+
     UserResponseDto updateByPrincipal(String username, UserPatchRequestDto patchDto);
 
     void deleteByPrincipal(String username);
@@ -25,4 +27,5 @@ public interface UserService extends UserDetailsService {
     void banUser(String adminUsername, Long userId, String reason);
 
     void unbanUser(String adminUsername, Long userId, String reason);
+
 }
