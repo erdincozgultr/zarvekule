@@ -4,7 +4,9 @@ import com.zarvekule.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,7 +28,7 @@ public class Guild {
     @JoinColumn(name = "leader_id")
     private User leader;
 
-    @OneToMany
+    @ManyToMany
     @JoinTable(
             name = "guild_members",
             joinColumns = @JoinColumn(name = "guild_id"),
@@ -35,5 +37,10 @@ public class Guild {
     private Set<User> members = new HashSet<>();
 
     private int level = 1;
+
     private long xp = 0;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 }
