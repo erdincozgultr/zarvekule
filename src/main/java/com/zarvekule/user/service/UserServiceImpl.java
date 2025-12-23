@@ -3,6 +3,11 @@ package com.zarvekule.user.service;
 import com.zarvekule.audit.enums.AuditAction;
 import com.zarvekule.audit.service.AuditService;
 import com.zarvekule.exceptions.ApiException;
+import com.zarvekule.gamification.dto.BadgeDto;
+import com.zarvekule.gamification.entity.UserBadge;
+import com.zarvekule.gamification.entity.UserStats;
+import com.zarvekule.gamification.repository.UserBadgeRepository;
+import com.zarvekule.gamification.repository.UserStatsRepository;
 import com.zarvekule.user.dto.*;
 import com.zarvekule.user.entity.Role;
 import com.zarvekule.user.entity.User;
@@ -30,6 +35,8 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
     private final AuditService auditService;
+    private final UserBadgeRepository userBadgeRepository;
+    private final UserStatsRepository userStatsRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -69,6 +76,36 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toList());
         profile.setRoles(roleNames);
 
+        // ✅ YENİ: Stats ekle
+        UserStats stats = userStatsRepository.findByUser_Id(user.getId()).orElse(null);
+        if (stats != null) {
+            UserStatsDto statsDto = new UserStatsDto();
+            statsDto.setCurrentXp(stats.getCurrentXp());
+            statsDto.setCurrentRank(stats.getCurrentRank().name());
+            statsDto.setRankTitle(stats.getCurrentRank().getTitle());
+            statsDto.setTotalBlogs(stats.getTotalBlogs());
+            statsDto.setTotalComments(stats.getTotalComments());
+            statsDto.setTotalHomebrews(stats.getTotalHomebrews());
+            statsDto.setTotalLikesReceived(stats.getTotalLikesReceived());
+            profile.setStats(statsDto);
+        }
+
+        List<UserBadge> userBadges = userBadgeRepository.findAllByUser_Id(user.getId());
+        List<BadgeDto> badgeDtos = userBadges.stream()
+                .map(ub -> {
+                    BadgeDto dto = new BadgeDto();
+                    dto.setId(ub.getBadge().getId());
+                    dto.setName(ub.getBadge().getName());
+                    dto.setDescription(ub.getBadge().getDescription());
+                    dto.setIconUrl(ub.getBadge().getIconUrl());
+                    dto.setEarnedAt(ub.getEarnedAt());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+        profile.setBadges(badgeDtos);
+
+        // Guild user'ın bir member olarak bulunduğu lonca bilgisi
+
         return profile;
     }
 
@@ -98,6 +135,19 @@ public class UserServiceImpl implements UserService {
 
         if (patchDto.bio() != null) {
             user.setBio(patchDto.bio());
+        }
+
+        // ✅ YENİ ALANLAR
+        if (patchDto.title() != null) {
+            user.setTitle(patchDto.title());
+        }
+
+        if (patchDto.avatarUrl() != null) {
+            user.setAvatarUrl(patchDto.avatarUrl());
+        }
+
+        if (patchDto.bannerUrl() != null) {
+            user.setBannerUrl(patchDto.bannerUrl());
         }
 
         if (patchDto.newPassword() != null && !patchDto.newPassword().isBlank()) {
