@@ -15,5 +15,5 @@ public class GuildDto {
     private int memberCount;
     private UserSummaryDto leader;
     private LocalDateTime createdAt;
-    private boolean isMember; // Kullanıcı bu guild'in üyesi mi?
+    private boolean currentUserIsMember; // Kullanıcı bu guild'in üyesi mi? (isMember yerine)
 }

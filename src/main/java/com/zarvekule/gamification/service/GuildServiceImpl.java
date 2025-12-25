@@ -270,6 +270,7 @@ public class GuildServiceImpl implements GuildService {
 
     // ==================== HELPER METHODS ====================
 
+
     private GuildDto toDto(Guild guild, Long userGuildId) {
         GuildDto dto = new GuildDto();
         dto.setId(guild.getId());
@@ -277,12 +278,15 @@ public class GuildServiceImpl implements GuildService {
         dto.setDescription(guild.getDescription());
         dto.setLevel(guild.getLevel());
         dto.setXp(guild.getXp());
+        dto.setCreatedAt(guild.getCreatedAt());
         dto.setMemberCount(guild.getMembers() != null ? guild.getMembers().size() : 0);
         dto.setLeader(guild.getLeader() != null ? userMapper.toSummaryDto(guild.getLeader()) : null);
-        dto.setMember(userGuildId != null && userGuildId.equals(guild.getId()));
+
+        // YENİ İSİM: isMember -> currentUserIsMember
+        dto.setCurrentUserIsMember(userGuildId != null && userGuildId.equals(guild.getId()));
+
         return dto;
     }
-
     private GuildDetailDto toDetailDto(Guild guild, boolean isMember, boolean isLeader) {
         GuildDetailDto dto = new GuildDetailDto();
         dto.setId(guild.getId());
@@ -292,8 +296,9 @@ public class GuildServiceImpl implements GuildService {
         dto.setXp(guild.getXp());
         dto.setXpForNextLevel(1000L); // Her 1000 XP'de level atlıyor varsayımı
         dto.setMemberCount(guild.getMembers() != null ? guild.getMembers().size() : 0);
+        dto.setCreatedAt(guild.getCreatedAt());
 
-        // Leader
+        // Leader (GuildMemberDto olarak)
         if (guild.getLeader() != null) {
             GuildMemberDto leaderDto = toMemberDto(guild.getLeader(), true);
             dto.setLeader(leaderDto);
@@ -308,8 +313,9 @@ public class GuildServiceImpl implements GuildService {
             dto.setMembers(members);
         }
 
-        dto.setMember(isMember);
-        dto.setLeader(isLeader);
+        // Boolean değerler - YENİ İSİMLER
+        dto.setCurrentUserIsMember(isMember);
+        dto.setCurrentUserIsLeader(isLeader);
 
         return dto;
     }
@@ -321,7 +327,10 @@ public class GuildServiceImpl implements GuildService {
         dto.setDisplayName(user.getDisplayName() != null ? user.getDisplayName() : user.getUsername());
         dto.setAvatarUrl(user.getAvatarUrl());
         dto.setTitle(user.getTitle() != null ? user.getTitle() : "Gezgin");
-        dto.setLeader(isLeader);
+
+        // YENİ İSİM: isLeader -> leaderStatus
+        dto.setLeaderStatus(isLeader);
+
         return dto;
     }
 }

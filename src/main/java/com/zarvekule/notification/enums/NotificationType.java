@@ -4,6 +4,7 @@ public enum NotificationType {
     SYSTEM,
     COMMENT_REPLY,
     CONTENT_APPROVED,
+    GUILD,
     CONTENT_REJECTED,
     MARKETPLACE_SOLD,
     MARKETPLACE_EXPIRED,

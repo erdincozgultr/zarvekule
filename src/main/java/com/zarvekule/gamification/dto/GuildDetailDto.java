@@ -14,9 +14,11 @@ public class GuildDetailDto {
     private long xp;
     private long xpForNextLevel; // Bir sonraki level için gereken XP
     private int memberCount;
-    private GuildMemberDto leader;
+    private GuildMemberDto leader;          // Lonca lideri bilgisi
     private List<GuildMemberDto> members;
     private LocalDateTime createdAt;
-    private boolean isMember;
-    private boolean isLeader;
+
+    // İsimlendirme değiştirildi - Lombok setter çakışmasını önlemek için
+    private boolean currentUserIsMember;    // Mevcut kullanıcı üye mi?
+    private boolean currentUserIsLeader;    // Mevcut kullanıcı lider mi?
 }
