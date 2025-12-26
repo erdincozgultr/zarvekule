@@ -13,4 +13,5 @@ public class BadgeDto {
     private String conditionCode;
     private boolean earned; // Kullanıcı bu badge'i kazandı mı?
     private LocalDateTime earnedAt; // Kazanma tarihi (varsa)
+    private String category;
 }
