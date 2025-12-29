@@ -38,7 +38,6 @@ public class GlobalSearchServiceImpl implements GlobalSearchService {
         for (WikiEntry w : wikiEntries) {
             GlobalSearchResponse dto = new GlobalSearchResponse();
             dto.setTitle(w.getTitle());
-            dto.setDescription(getDescriptionSnippet(w.getContent()));
             dto.setSlug(w.getSlug());
             dto.setType(SearchResultType.WIKI);
             dto.setUrl("/wiki/" + w.getSlug());

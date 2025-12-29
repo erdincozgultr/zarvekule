@@ -4,23 +4,34 @@ import com.zarvekule.wiki.enums.ContentCategory;
 import com.zarvekule.wiki.enums.WikiStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.util.Map;
+
+/**
+ * Wiki oluşturma/güncelleme request DTO
+ */
 @Data
 public class WikiEntryRequest {
-
-    @NotBlank(message = "Başlık boş olamaz.")
-    @Size(min = 3, max = 100, message = "Başlık 3-100 karakter arasında olmalıdır.")
+    
+    @NotBlank(message = "Başlık boş olamaz")
     private String title;
-
-    @NotBlank(message = "İçerik boş olamaz.")
-    private String content;
-
-    @NotNull(message = "Kategori seçilmelidir.")
+    
+    @NotNull(message = "Kategori belirtilmeli")
     private ContentCategory category;
-
-    private WikiStatus status;
-
+    
+    /**
+     * Orijinal API verisi - JSON olarak gönderilir
+     */
+    private Map<String, Object> metadata;
+    
+    /**
+     * Türkçe içerik - JSON olarak gönderilir
+     */
+    private Map<String, Object> turkishContent;
+    
+    private String sourceKey;
     private String imageUrl;
+    private WikiStatus status;
+    private String customSlug;
 }
