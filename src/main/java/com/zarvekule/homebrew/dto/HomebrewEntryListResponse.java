@@ -3,21 +3,19 @@ package com.zarvekule.homebrew.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.zarvekule.homebrew.enums.HomebrewCategory;
 import com.zarvekule.homebrew.enums.HomebrewStatus;
-import com.zarvekule.user.dto.UserSummaryDto;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Set;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class HomebrewEntryResponse {
+public class HomebrewEntryListResponse {
 
     private Long id;
     private String name;
     private String slug;
-    private String description;
+    private String description; // Kısa açıklama
     private String imageUrl;
 
     private HomebrewCategory category;
@@ -25,20 +23,18 @@ public class HomebrewEntryResponse {
 
     private HomebrewStatus status;
 
-    private Map<String, Object> content;
-
     private Set<String> tags;
 
-    private UserSummaryDto author;
+    private String authorUsername;
+    private String authorDisplayName;
+    private String authorAvatarUrl;
 
     private long viewCount;
     private long likeCount;
     private boolean liked;
 
     private long forkCount;
-    private Long parentEntryId; // Fork edildiyse parent'ın ID'si
 
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
     private LocalDateTime publishedAt;
 }

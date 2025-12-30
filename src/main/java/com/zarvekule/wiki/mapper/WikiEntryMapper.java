@@ -11,12 +11,16 @@ import java.util.stream.Collectors;
 
 /**
  * Wiki Entity <-> DTO dönüşüm mapper'ı
+ *
+ * NOT: metadata artık response'a EKLENMİYOR
+ * Sadece turkishContent gönderiliyor
  */
 @Component
 public class WikiEntryMapper {
 
     /**
-     * Detay DTO - metadata ve turkishContent DAHİL
+     * Detay DTO - SADECE turkishContent dahil
+     * metadata dahil DEĞİL
      */
     public WikiEntryResponse toDto(WikiEntry entity) {
         if (entity == null) return null;
@@ -31,9 +35,11 @@ public class WikiEntryMapper {
                 entity.getCategory().getDisplayName() : null);
         dto.setStatus(entity.getStatus());
 
-        // JSON olarak doğrudan aktar
-        dto.setMetadata(entity.getMetadata());
+        // SADECE turkishContent gönderiliyor
         dto.setTurkishContent(entity.getTurkishContent());
+
+        // metadata GÖNDERILMIYOR - backend'de kalıyor
+        // dto.setMetadata(entity.getMetadata()); // KALDIRILDI
 
         dto.setSourceKey(entity.getSourceKey());
         dto.setImageUrl(entity.getImageUrl());

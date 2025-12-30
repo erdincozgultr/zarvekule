@@ -3,11 +3,14 @@ package com.zarvekule.homebrew.entity;
 import com.zarvekule.homebrew.enums.HomebrewCategory;
 import com.zarvekule.homebrew.enums.HomebrewStatus;
 import com.zarvekule.user.entity.User;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.Type;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Entity
@@ -26,41 +29,56 @@ public class HomebrewEntry {
     private String slug;
 
     @Column(length = 1000)
-    private String description; // Kısa açıklama
+    private String description; // Kısa açıklama (liste görünümü için)
 
-    @Column(columnDefinition = "TEXT")
-    private String excerpt; // Detaylı içerik veya alıntı
-
-    private String imageUrl; // Resim Alanı
+    private String imageUrl;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private HomebrewCategory category;
-
-    private String rarity;
-    private String requiredLevel;
-
-    @ElementCollection
-    private Set<String> tags = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     private HomebrewStatus status = HomebrewStatus.PENDING_APPROVAL;
 
-    @ManyToOne
-    @JoinColumn(name = "author_id")
+    @Type(JsonType.class)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> content;
+
+    @ElementCollection
+    @CollectionTable(name = "homebrew_entry_tags", joinColumns = @JoinColumn(name = "entry_id"))
+    @Column(name = "tag")
+    private Set<String> tags = new HashSet<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
-    // Like sistemi için sayaç
     @Column(name = "like_count")
     private long likeCount = 0;
 
     @Column(name = "view_count")
     private long viewCount = 0;
 
-    @ManyToOne
+    // Fork sistemi için (opsiyonel)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_entry_id")
-    private HomebrewEntry parentEntry; // Fork sistemi için
+    private HomebrewEntry parentEntry;
+
+    @Column(name = "fork_count")
+    private long forkCount = 0;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime publishedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
