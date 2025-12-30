@@ -10,7 +10,11 @@ public enum ContentCategory {
     WEAPON("Silahlar"),
     RACES("Irklar"),
     CONDITIONS("Durumlar"),
-    ARMOR("Zırhlar");
+    ARMOR("Zırhlar"),
+    SPELL_LIST("Büyü Listesi"),
+    CLASSES("Sınıflar"),
+    DOCUMENTS("Dökümanlar"),
+    SECTIONS("Kısımlar");
 
     private final String displayName;
 
