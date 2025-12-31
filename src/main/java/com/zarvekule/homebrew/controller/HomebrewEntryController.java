@@ -3,10 +3,14 @@ package com.zarvekule.homebrew.controller;
 import com.zarvekule.homebrew.dto.HomebrewEntryPatchRequest;
 import com.zarvekule.homebrew.dto.HomebrewEntryRequest;
 import com.zarvekule.homebrew.dto.HomebrewEntryResponse;
+import com.zarvekule.homebrew.dto.HomebrewEntryListResponse;
 import com.zarvekule.homebrew.enums.HomebrewCategory;
 import com.zarvekule.homebrew.service.HomebrewEntryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,23 +28,79 @@ public class HomebrewEntryController {
 
     private final HomebrewEntryService homebrewService;
 
-    // --- PUBLIC LİSTELEME ENDPOINTLERİ (Giriş yapanın beğenileri görünür) ---
+    // ============================================
+    // PUBLIC LİSTELEME ENDPOINTLERİ (PAGINATION)
+    // ============================================
 
-    @GetMapping("/public")
-    public ResponseEntity<List<HomebrewEntryResponse>> getAllPublished(Principal principal) {
-        String username = (principal != null) ? principal.getName() : null;
-        return ResponseEntity.ok(homebrewService.getPublishedHomebrews(username));
-    }
-
-    @GetMapping("/category/{category}")
-    public ResponseEntity<List<HomebrewEntryResponse>> getByCategory(
-            @PathVariable HomebrewCategory category,
+    /**
+     * Tüm yayınlanmış homebrew'lar (sayfalama ile)
+     * GET /api/homebrews?page=0&size=20
+     */
+    @GetMapping
+    public ResponseEntity<Page<HomebrewEntryListResponse>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             Principal principal) {
+        Pageable pageable = PageRequest.of(page, size);
         String username = (principal != null) ? principal.getName() : null;
-        return ResponseEntity.ok(homebrewService.getPublishedHomebrewsByCategory(category, username));
+        return ResponseEntity.ok(homebrewService.getPublishedHomebrews(pageable, username));
     }
 
-    @GetMapping("/read/{slug}")
+    /**
+     * Kategoriye göre homebrew'lar (sayfalama ile)
+     * GET /api/homebrews/category/SPELL?page=0&size=20
+     */
+    @GetMapping("/category/{category}")
+    public ResponseEntity<Page<HomebrewEntryListResponse>> getByCategory(
+            @PathVariable HomebrewCategory category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Principal principal) {
+        Pageable pageable = PageRequest.of(page, size);
+        String username = (principal != null) ? principal.getName() : null;
+        return ResponseEntity.ok(homebrewService.getPublishedHomebrewsByCategory(category, pageable, username));
+    }
+
+    /**
+     * Arama (sayfalama ile)
+     * GET /api/homebrews/search?q=dragon&page=0&size=20
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Page<HomebrewEntryListResponse>> search(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Principal principal) {
+        Pageable pageable = PageRequest.of(page, size);
+        String username = (principal != null) ? principal.getName() : null;
+        return ResponseEntity.ok(homebrewService.search(q, pageable, username));
+    }
+
+    /**
+     * Kategori bazlı arama (sayfalama ile)
+     * GET /api/homebrews/category/SPELL/search?q=fire&page=0&size=20
+     */
+    @GetMapping("/category/{category}/search")
+    public ResponseEntity<Page<HomebrewEntryListResponse>> searchByCategory(
+            @PathVariable HomebrewCategory category,
+            @RequestParam String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Principal principal) {
+        Pageable pageable = PageRequest.of(page, size);
+        String username = (principal != null) ? principal.getName() : null;
+        return ResponseEntity.ok(homebrewService.searchByCategory(category, q, pageable, username));
+    }
+
+    // ============================================
+    // DETAY ENDPOINTLERİ
+    // ============================================
+
+    /**
+     * Slug ile homebrew detay
+     * GET /api/homebrews/slug/my-custom-spell
+     */
+    @GetMapping("/slug/{slug}")
     public ResponseEntity<HomebrewEntryResponse> getBySlug(
             @PathVariable String slug,
             Principal principal) {
@@ -48,17 +108,77 @@ public class HomebrewEntryController {
         return ResponseEntity.ok(homebrewService.getBySlug(slug, username));
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<List<HomebrewEntryResponse>> search(
-            @RequestParam String q,
+    /**
+     * ID ile homebrew detay (geriye dönük uyumluluk)
+     * GET /api/homebrews/read/{slug}
+     */
+    @GetMapping("/read/{slug}")
+    public ResponseEntity<HomebrewEntryResponse> getBySlugLegacy(
+            @PathVariable String slug,
             Principal principal) {
         String username = (principal != null) ? principal.getName() : null;
-        return ResponseEntity.ok(homebrewService.search(q, username));
+        return ResponseEntity.ok(homebrewService.getBySlug(slug, username));
     }
 
-    // --- YÖNETİM ENDPOINTLERİ ---
+    // ============================================
+    // İSTATİSTİK ENDPOINTLERİ
+    // ============================================
 
+    /**
+     * Kategori sayıları (Wiki ile uyumlu)
+     * GET /api/homebrews/stats/counts
+     */
+    @GetMapping("/stats/counts")
+    public ResponseEntity<java.util.Map<HomebrewCategory, Long>> getCategoryCounts() {
+        return ResponseEntity.ok(homebrewService.getCategoryCounts());
+    }
+
+    /**
+     * Belirli kategori sayısı
+     * GET /api/homebrews/stats/count/SPELL
+     */
+    @GetMapping("/stats/count/{category}")
+    public ResponseEntity<Long> countByCategory(@PathVariable HomebrewCategory category) {
+        return ResponseEntity.ok(homebrewService.countPublishedHomebrewsByCategory(category));
+    }
+
+    // ============================================
+    // KULLANICI İŞLEMLERİ
+    // ============================================
+
+    /**
+     * Kullanıcının kendi homebrew'ları
+     * GET /api/homebrews/my-homebrews
+     */
+    @GetMapping("/my-homebrews")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<HomebrewEntryResponse>> getMyHomebrews(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(homebrewService.getMyHomebrews(userDetails.getUsername()));
+    }
+
+    /**
+     * Belirli kullanıcının homebrew'ları (public)
+     * GET /api/homebrews/user/{username}
+     */
+    @GetMapping("/user/{username}")
+    public ResponseEntity<List<HomebrewEntryResponse>> getUserHomebrews(
+            @PathVariable String username,
+            Principal principal) {
+        String authenticatedUsername = (principal != null) ? principal.getName() : null;
+        return ResponseEntity.ok(homebrewService.getUserHomebrews(username, authenticatedUsername));
+    }
+
+    // ============================================
+    // CRUD İŞLEMLERİ
+    // ============================================
+
+    /**
+     * Yeni homebrew oluştur
+     * POST /api/homebrews
+     */
     @PostMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<HomebrewEntryResponse> create(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody HomebrewEntryRequest request) {
@@ -66,7 +186,12 @@ public class HomebrewEntryController {
                 .body(homebrewService.create(userDetails.getUsername(), request));
     }
 
+    /**
+     * Homebrew güncelle
+     * PATCH /api/homebrews/{id}
+     */
     @PatchMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<HomebrewEntryResponse> update(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long id,
@@ -74,7 +199,12 @@ public class HomebrewEntryController {
         return ResponseEntity.ok(homebrewService.update(userDetails.getUsername(), id, request));
     }
 
+    /**
+     * Homebrew sil
+     * DELETE /api/homebrews/{id}
+     */
     @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> delete(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long id) {
@@ -82,21 +212,16 @@ public class HomebrewEntryController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/my-homebrews")
-    public ResponseEntity<List<HomebrewEntryResponse>> getMyHomebrews(
-            @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(homebrewService.getMyHomebrews(userDetails.getUsername()));
-    }
-
-    @GetMapping("/categories/{category}/count")
-    public ResponseEntity<Long> countByCategory(@PathVariable HomebrewCategory category) {
-        return ResponseEntity.ok(homebrewService.countPublishedHomebrewsByCategory(category));
-    }
+    // ============================================
+    // GELECEK ÖZELLİKLER (Commented)
+    // ============================================
 
 //    @PostMapping("/{id}/fork")
 //    @PreAuthorize("isAuthenticated()")
-//    public ResponseEntity<HomebrewEntryResponse> forkEntry(Principal principal, @PathVariable Long id) {
+//    public ResponseEntity<HomebrewEntryResponse> forkEntry(
+//            @AuthenticationPrincipal UserDetails userDetails,
+//            @PathVariable Long id) {
 //        return ResponseEntity.status(HttpStatus.CREATED)
-//                .body(homebrewService.forkEntry(principal.getName(), id));
+//                .body(homebrewService.forkEntry(userDetails.getUsername(), id));
 //    }
 }

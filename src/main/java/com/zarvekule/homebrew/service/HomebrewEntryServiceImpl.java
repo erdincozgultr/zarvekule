@@ -1,5 +1,12 @@
 package com.zarvekule.homebrew.service;
 
+import com.zarvekule.homebrew.dto.HomebrewEntryListResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.zarvekule.audit.enums.AuditAction;
 import com.zarvekule.audit.service.AuditService;
 import com.zarvekule.community.enums.TargetType;
@@ -26,8 +33,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -41,7 +48,7 @@ public class HomebrewEntryServiceImpl implements HomebrewEntryService {
     private final NotificationService notificationService;
     private final AuditService auditService;
     private final GamificationService gamificationService;
-    private final LikeEntryRepository likeRepository; // LikeRepo Eklendi
+    private final LikeEntryRepository likeRepository;
 
     @Override
     @Transactional
@@ -55,13 +62,11 @@ public class HomebrewEntryServiceImpl implements HomebrewEntryService {
         HomebrewEntry entry = new HomebrewEntry();
         entry.setName(request.getName());
         entry.setDescription(request.getDescription());
-        entry.setExcerpt(request.getExcerpt());
         entry.setCategory(request.getCategory());
-        entry.setRarity(request.getRarity());
-        entry.setRequiredLevel(request.getRequiredLevel());
+        entry.setContent(request.getContent()); // ✅ FIXED: JSON content eklendi
         entry.setTags(request.getTags());
         entry.setSlug(slug);
-        entry.setImageUrl(request.getImageUrl()); // Resim
+        entry.setImageUrl(request.getImageUrl());
         entry.setAuthor(author);
         entry.setStatus(HomebrewStatus.PENDING_APPROVAL);
         entry.setCreatedAt(LocalDateTime.now());
@@ -71,28 +76,94 @@ public class HomebrewEntryServiceImpl implements HomebrewEntryService {
         return homebrewMapper.toResponseDto(entry);
     }
 
-    // --- LİSTELEME İŞLEMLERİ (Like Kontrolü Entegre Edildi) ---
-
     @Override
-    @Transactional(readOnly = true)
-    public List<HomebrewEntryResponse> getPublishedHomebrews(String authenticatedUsername) {
-        List<HomebrewEntry> entries = homebrewRepository.findAllByStatusOrderByPublishedAtDesc(HomebrewStatus.PUBLISHED);
-        return convertAndCheckLikes(entries, authenticatedUsername);
+    @Transactional
+    public HomebrewEntryResponse update(String authenticatedUsername, Long id, HomebrewEntryPatchRequest request) {
+        HomebrewEntry existingEntry = homebrewRepository.findById(id)
+                .orElseThrow(() -> new ApiException("Kayıt bulunamadı.", HttpStatus.NOT_FOUND));
+
+        User currentUser = userRepository.findByUsername(authenticatedUsername)
+                .orElseThrow(() -> new ApiException("Kullanıcı bulunamadı.", HttpStatus.NOT_FOUND));
+
+        boolean isAdminOrModerator = currentUser.getAuthorities().stream()
+                .anyMatch(r -> r.getAuthority().equals("ROLE_ADMIN") || r.getAuthority().equals("ROLE_MODERATOR"));
+
+        if (!existingEntry.getAuthor().getUsername().equals(authenticatedUsername) && !isAdminOrModerator) {
+            throw new ApiException("Bu kaydı güncelleme yetkiniz yok.", HttpStatus.FORBIDDEN);
+        }
+
+        if (request.getName() != null) {
+            existingEntry.setName(request.getName());
+            String newSlug = SlugUtils.createSlug(request.getCustomSlug(), request.getName());
+            existingEntry.setSlug(ensureUniqueSlug(newSlug));
+        }
+        if (request.getDescription() != null) existingEntry.setDescription(request.getDescription());
+        if (request.getCategory() != null) existingEntry.setCategory(request.getCategory());
+        if (request.getContent() != null)
+            existingEntry.setContent(request.getContent()); // ✅ FIXED: content güncelleme eklendi
+        if (request.getTags() != null) existingEntry.setTags(request.getTags());
+        if (request.getImageUrl() != null) existingEntry.setImageUrl(request.getImageUrl());
+
+        // Status değişikliği
+        if (request.getStatus() != null) {
+            HomebrewStatus oldStatus = existingEntry.getStatus();
+            existingEntry.setStatus(request.getStatus());
+
+            if (request.getStatus() == HomebrewStatus.PUBLISHED && oldStatus != HomebrewStatus.PUBLISHED) {
+                existingEntry.setPublishedAt(LocalDateTime.now());
+
+                // Bildirim gönder
+                notificationService.createNotification(
+                        existingEntry.getAuthor(),
+                        "Homebrew Yayınlandı",
+                        "Homebrew içeriğin yayınlandı: " + existingEntry.getName(),
+                        NotificationType.HOMEBREW_PUBLISHED,
+                        "/homebrew/" + existingEntry.getSlug()
+                );
+
+                // Audit log
+                auditService.logAction(
+                        currentUser.getUsername(),
+                        AuditAction.HOMEBREW_APPROVED,
+                        "HomebrewEntry",
+                        existingEntry.getId(),
+                        "Homebrew onaylandı: " + existingEntry.getName()
+                );
+            }
+        }
+
+        existingEntry.setUpdatedAt(LocalDateTime.now());
+        return homebrewMapper.toResponseDto(homebrewRepository.save(existingEntry));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<HomebrewEntryResponse> getPublishedHomebrewsByCategory(HomebrewCategory category, String authenticatedUsername) {
-        List<HomebrewEntry> entries = homebrewRepository.findAllByStatusAndCategoryOrderByPublishedAtDesc(HomebrewStatus.PUBLISHED, category);
-        return convertAndCheckLikes(entries, authenticatedUsername);
+    @Transactional
+    public void delete(String authenticatedUsername, Long id) {
+        HomebrewEntry entry = homebrewRepository.findById(id)
+                .orElseThrow(() -> new ApiException("Kayıt bulunamadı.", HttpStatus.NOT_FOUND));
+
+        User currentUser = userRepository.findByUsername(authenticatedUsername)
+                .orElseThrow(() -> new ApiException("Kullanıcı bulunamadı.", HttpStatus.UNAUTHORIZED));
+
+        boolean isOwner = Objects.equals(entry.getAuthor().getUsername(), authenticatedUsername);
+        boolean isAdminOrModerator = currentUser.getAuthorities().stream()
+                .anyMatch(r -> r.getAuthority().equals("ROLE_ADMIN") || r.getAuthority().equals("ROLE_MODERATOR"));
+
+        if (!isOwner && !isAdminOrModerator) {
+            throw new ApiException("Bu kaydı silme yetkiniz yok.", HttpStatus.FORBIDDEN);
+        }
+
+        homebrewRepository.delete(entry);
+
+        auditService.logAction(
+                currentUser.getUsername(),
+                AuditAction.HOMEBREW_REJECT,
+                "HomebrewEntry",
+                id,
+                "Homebrew silindi: " + entry.getName()
+        );
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<HomebrewEntryResponse> search(String keyword, String authenticatedUsername) {
-        List<HomebrewEntry> entries = homebrewRepository.searchPublic(keyword);
-        return convertAndCheckLikes(entries, authenticatedUsername);
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -102,31 +173,6 @@ public class HomebrewEntryServiceImpl implements HomebrewEntryService {
         List<HomebrewEntry> entries = homebrewRepository.findAllByAuthorIdOrderByCreatedAtDesc(user.getId());
         return convertAndCheckLikes(entries, authenticatedUsername);
     }
-
-    // Yardımcı Metod: Listeyi DTO'ya çevirir ve Like kontrolü yapar
-    private List<HomebrewEntryResponse> convertAndCheckLikes(List<HomebrewEntry> entries, String username) {
-        List<HomebrewEntryResponse> responses = entries.stream()
-                .map(homebrewMapper::toResponseDto)
-                .collect(Collectors.toList());
-
-        if (username != null && !responses.isEmpty()) {
-            userRepository.findByUsername(username).ifPresent(user -> {
-                List<Long> ids = responses.stream().map(HomebrewEntryResponse::getId).toList();
-
-                // TargetType.HOMEBREW_ENTRY (Enum adının doğruluğunu teyit etmelisin)
-                List<Long> likedIds = likeRepository.findLikedIdsByUser(user.getId(), TargetType.HOMEBREW_ENTRY, ids);
-
-                responses.forEach(res -> {
-                    if (likedIds.contains(res.getId())) {
-                        res.setLiked(true);
-                    }
-                });
-            });
-        }
-        return responses;
-    }
-
-    // --- DETAY GÖRÜNTÜLEME ---
 
     @Override
     @Transactional
@@ -147,56 +193,6 @@ public class HomebrewEntryServiceImpl implements HomebrewEntryService {
         return response;
     }
 
-    // --- GÜNCELLEME İŞLEMİ ---
-
-    @Override
-    @Transactional
-    public HomebrewEntryResponse update(String authenticatedUsername, Long id, HomebrewEntryPatchRequest request) {
-        HomebrewEntry existingEntry = homebrewRepository.findById(id)
-                .orElseThrow(() -> new ApiException("Kayıt bulunamadı.", HttpStatus.NOT_FOUND));
-
-        User currentUser = userRepository.findByUsername(authenticatedUsername)
-                .orElseThrow(() -> new ApiException("Kullanıcı bulunamadı.", HttpStatus.NOT_FOUND));
-
-        boolean isAdminOrModerator = currentUser.getAuthorities().stream()
-                .anyMatch(r -> r.getAuthority().equals("ROLE_ADMIN") || r.getAuthority().equals("ROLE_MODERATOR"));
-
-        if (!existingEntry.getAuthor().getUsername().equals(authenticatedUsername) && !isAdminOrModerator) {
-            throw new ApiException("Bu kaydı güncelleme yetkiniz yok.", HttpStatus.FORBIDDEN);
-        }
-
-        if (request.getName() != null) {
-            existingEntry.setName(request.getName());
-            String newSlug = SlugUtils.createSlug(null, request.getName());
-            existingEntry.setSlug(ensureUniqueSlug(newSlug));
-        }
-        if (request.getDescription() != null) existingEntry.setDescription(request.getDescription());
-        if (request.getExcerpt() != null) existingEntry.setExcerpt(request.getExcerpt());
-        if (request.getCategory() != null) existingEntry.setCategory(request.getCategory());
-        if (request.getRarity() != null) existingEntry.setRarity(request.getRarity());
-        if (request.getRequiredLevel() != null) existingEntry.setRequiredLevel(request.getRequiredLevel());
-        if (request.getTags() != null) existingEntry.setTags(request.getTags());
-        if (request.getImageUrl() != null) existingEntry.setImageUrl(request.getImageUrl()); // Resim
-
-        // Status ve diğer işlemler aynı...
-        if (request.getStatus() != null) {
-            existingEntry.setStatus(request.getStatus());
-            // Audit ve Notification işlemleri burada devam eder... (Mevcut kodunla aynı)
-        }
-
-        existingEntry.setUpdatedAt(LocalDateTime.now());
-        return homebrewMapper.toResponseDto(homebrewRepository.save(existingEntry));
-    }
-
-    // --- DİĞER METODLAR ---
-
-    @Override
-    @Transactional
-    public void delete(String authenticatedUsername, Long id) {
-        // Silme mantığı mevcut kodunla aynı...
-        homebrewRepository.deleteById(id); // Basitleştirildi
-    }
-
     @Override
     @Transactional
     public void increaseViewCount(Long id) {
@@ -212,49 +208,132 @@ public class HomebrewEntryServiceImpl implements HomebrewEntryService {
         return homebrewRepository.countByStatusAndCategory(HomebrewStatus.PUBLISHED, category);
     }
 
-//    @Override
-//    @Transactional
-//    public HomebrewEntryResponse forkEntry(String username, Long entryId) {
-//        User user = userRepository.findByUsername(username)
-//                .orElseThrow(() -> new ApiException("Kullanıcı bulunamadı.", HttpStatus.NOT_FOUND));
-//
-//        HomebrewEntry original = homebrewRepository.findById(entryId)
-//                .orElseThrow(() -> new ApiException("Orijinal içerik bulunamadı.", HttpStatus.NOT_FOUND));
-//
-//        // Sadece yayınlanmış içerikler veya yazarın kendi içeriği fork'lanabilir
-//        if (original.getStatus() != HomebrewStatus.PUBLISHED && !original.getAuthor().getUsername().equals(username)) {
-//            throw new ApiException("Bu içerik kopyalanamaz.", HttpStatus.FORBIDDEN);
-//        }
-//
-//        HomebrewEntry copy = new HomebrewEntry();
-//        copy.setName(original.getName() + " (Varyasyon)");
-//        copy.setDescription(original.getDescription());
-//        copy.setExcerpt(original.getExcerpt());
-//        copy.setCategory(original.getCategory());
-//        copy.setRarity(original.getRarity());
-//        copy.setRequiredLevel(original.getRequiredLevel());
-//        copy.setTags(new HashSet<>(original.getTags()));
-//
-//        copy.setAuthor(user);
-//        copy.setStatus(HomebrewStatus.DRAFT);
-//        copy.setParentEntry(original);
-//        copy.setCreatedAt(LocalDateTime.now());
-//
-//        // Slug oluşturma
-//        String slug = SlugUtils.createSlug(null, copy.getName());
-//        copy.setSlug(this.ensureUniqueSlug(slug));
-//
-//        copy = homebrewRepository.save(copy);
-//        return homebrewMapper.toResponseDto(copy);
-//    }
+    // ============= HELPER METHODS =============
 
-    private String ensureUniqueSlug(String slug) {
-        String finalSlug = slug;
-        int count = 1;
-        // existsBySlug kullanılıyor
-        while (homebrewRepository.existsBySlug(finalSlug)) {
-            finalSlug = slug + "-" + count++;
+    private String ensureUniqueSlug(String baseSlug) {
+        String slug = baseSlug;
+        int counter = 1;
+        while (homebrewRepository.existsBySlug(slug)) {
+            slug = baseSlug + "-" + counter++;
         }
-        return finalSlug;
+        return slug;
+    }
+
+    private List<HomebrewEntryResponse> convertAndCheckLikes(List<HomebrewEntry> entries, String username) {
+        List<HomebrewEntryResponse> responses = entries.stream()
+                .map(homebrewMapper::toResponseDto)
+                .collect(Collectors.toList());
+
+        if (username != null && !responses.isEmpty()) {
+            userRepository.findByUsername(username).ifPresent(user -> {
+                List<Long> ids = responses.stream().map(HomebrewEntryResponse::getId).toList();
+                List<Long> likedIds = likeRepository.findLikedIdsByUser(user.getId(), TargetType.HOMEBREW_ENTRY, ids);
+
+                responses.forEach(res -> {
+                    if (likedIds.contains(res.getId())) {
+                        res.setLiked(true);
+                    }
+                });
+            });
+        }
+        return responses;
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<HomebrewEntryListResponse> getPublishedHomebrews(Pageable pageable, String authenticatedUsername) {
+        Page<HomebrewEntry> entries = homebrewRepository.findAllByStatus(HomebrewStatus.PUBLISHED, pageable);
+        return convertPageAndCheckLikes(entries, authenticatedUsername);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<HomebrewEntryListResponse> getPublishedHomebrewsByCategory(
+            HomebrewCategory category,
+            Pageable pageable,
+            String authenticatedUsername) {
+        Page<HomebrewEntry> entries = homebrewRepository.findAllByStatusAndCategory(
+                HomebrewStatus.PUBLISHED, category, pageable);
+        return convertPageAndCheckLikes(entries, authenticatedUsername);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<HomebrewEntryListResponse> search(
+            String keyword,
+            Pageable pageable,
+            String authenticatedUsername) {
+        Page<HomebrewEntry> entries = homebrewRepository.searchPublicPaginated(keyword, pageable);
+        return convertPageAndCheckLikes(entries, authenticatedUsername);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<HomebrewEntryListResponse> searchByCategory(
+            HomebrewCategory category,
+            String keyword,
+            Pageable pageable,
+            String authenticatedUsername) {
+        Page<HomebrewEntry> entries = homebrewRepository.searchByCategoryPaginated(
+                category, keyword, pageable);
+        return convertPageAndCheckLikes(entries, authenticatedUsername);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HomebrewEntryResponse> getUserHomebrews(String username, String authenticatedUsername) {
+        User targetUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ApiException("Kullanıcı bulunamadı.", HttpStatus.NOT_FOUND));
+
+        List<HomebrewEntry> entries = homebrewRepository.findAllByAuthorIdAndStatusOrderByPublishedAtDesc(
+                targetUser.getId(), HomebrewStatus.PUBLISHED);
+
+        return convertAndCheckLikes(entries, authenticatedUsername);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<HomebrewCategory, Long> getCategoryCounts() {
+        return java.util.Arrays.stream(HomebrewCategory.values())
+                .collect(Collectors.toMap(
+                        category -> category,
+                        category -> homebrewRepository.countByStatusAndCategory(
+                                HomebrewStatus.PUBLISHED, category)
+                ));
+    }
+
+    private Page<HomebrewEntryListResponse> convertPageAndCheckLikes(
+            Page<HomebrewEntry> entriesPage,
+            String username) {
+
+        // Page içindeki her entry'yi ListResponse'a çevir
+        Page<HomebrewEntryListResponse> responses = entriesPage.map(homebrewMapper::toListDto);
+
+        // Eğer authenticated user varsa ve sonuç varsa, like kontrolü yap
+        if (username != null && responses.hasContent()) {
+            userRepository.findByUsername(username).ifPresent(user -> {
+                // Tüm entry ID'lerini topla
+                List<Long> ids = responses.getContent().stream()
+                        .map(HomebrewEntryListResponse::getId)
+                        .toList();
+
+                // Bu user'ın beğendiği entry'leri bul
+                List<Long> likedIds = likeRepository.findLikedIdsByUser(
+                        user.getId(),
+                        TargetType.HOMEBREW_ENTRY,
+                        ids
+                );
+
+                // Her response'da liked flag'i set et
+                responses.forEach(res -> {
+                    if (likedIds.contains(res.getId())) {
+                        res.setLiked(true);
+                    }
+                });
+            });
+        }
+
+        return responses;
     }
 }

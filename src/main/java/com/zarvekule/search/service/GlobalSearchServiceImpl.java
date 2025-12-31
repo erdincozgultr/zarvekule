@@ -34,6 +34,7 @@ public class GlobalSearchServiceImpl implements GlobalSearchService {
 
         String searchTerm = query.trim();
 
+        // Wiki aramasi
         List<WikiEntry> wikiEntries = wikiRepository.searchPublic(searchTerm);
         for (WikiEntry w : wikiEntries) {
             GlobalSearchResponse dto = new GlobalSearchResponse();
@@ -44,6 +45,7 @@ public class GlobalSearchServiceImpl implements GlobalSearchService {
             results.add(dto);
         }
 
+        // Blog aramasi
         List<BlogEntry> blogEntries = blogRepository.searchPublic(searchTerm);
         for (BlogEntry b : blogEntries) {
             GlobalSearchResponse dto = new GlobalSearchResponse();
@@ -55,11 +57,12 @@ public class GlobalSearchServiceImpl implements GlobalSearchService {
             results.add(dto);
         }
 
+        // Homebrew aramasi
         List<HomebrewEntry> homebrewEntries = homebrewRepository.searchPublic(searchTerm);
         for (HomebrewEntry h : homebrewEntries) {
             GlobalSearchResponse dto = new GlobalSearchResponse();
             dto.setTitle(h.getName());
-            dto.setDescription(h.getExcerpt() != null ? h.getExcerpt() : getDescriptionSnippet(h.getDescription()));
+            dto.setDescription(getDescriptionSnippet(h.getDescription())); // ✅ FIXED: excerpt yerine description
             dto.setSlug(h.getSlug());
             dto.setType(SearchResultType.HOMEBREW);
             dto.setUrl("/homebrew/" + h.getSlug());
