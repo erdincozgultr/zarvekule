@@ -72,8 +72,7 @@ public interface HomebrewEntryRepository extends JpaRepository<HomebrewEntry, Lo
      */
     @Query("SELECT h FROM HomebrewEntry h WHERE h.status = 'PUBLISHED' AND " +
             "(LOWER(h.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-            "LOWER(h.description) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-            "LOWER(h.excerpt) LIKE LOWER(CONCAT('%', :query, '%')))")
+            "LOWER(h.description) LIKE LOWER(CONCAT('%', :query, '%')))")
     List<HomebrewEntry> searchPublic(@Param("query") String query);
 
     /**
@@ -81,9 +80,9 @@ public interface HomebrewEntryRepository extends JpaRepository<HomebrewEntry, Lo
      */
     @Query("SELECT h FROM HomebrewEntry h WHERE h.status = 'PUBLISHED' AND " +
             "(LOWER(h.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-            "LOWER(h.description) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-            "LOWER(h.excerpt) LIKE LOWER(CONCAT('%', :query, '%')))")
+            "LOWER(h.description) LIKE LOWER(CONCAT('%', :query, '%')))")
     Page<HomebrewEntry> searchPublicPaginated(@Param("query") String query, Pageable pageable);
+
 
     /**
      * Kategori bazlı arama (pagination - YENİ!)
@@ -91,8 +90,7 @@ public interface HomebrewEntryRepository extends JpaRepository<HomebrewEntry, Lo
     @Query("SELECT h FROM HomebrewEntry h WHERE h.status = 'PUBLISHED' " +
             "AND h.category = :category " +
             "AND (LOWER(h.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-            "LOWER(h.description) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-            "LOWER(h.excerpt) LIKE LOWER(CONCAT('%', :query, '%')))")
+            "LOWER(h.description) LIKE LOWER(CONCAT('%', :query, '%')))")
     Page<HomebrewEntry> searchByCategoryPaginated(
             @Param("category") HomebrewCategory category,
             @Param("query") String query,
