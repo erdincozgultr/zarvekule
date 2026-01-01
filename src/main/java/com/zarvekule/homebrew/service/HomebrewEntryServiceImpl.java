@@ -211,11 +211,15 @@ public class HomebrewEntryServiceImpl implements HomebrewEntryService {
     // ============= HELPER METHODS =============
 
     private String ensureUniqueSlug(String baseSlug) {
-        String slug = baseSlug;
+        // Homebrew için prefix ekle
+        String slug = "hb-" + baseSlug;
+
+        // Eğer slug zaten varsa, sonuna sayı ekle
         int counter = 1;
         while (homebrewRepository.existsBySlug(slug)) {
-            slug = baseSlug + "-" + counter++;
+            slug = "hb-" + baseSlug + "-" + counter++;
         }
+
         return slug;
     }
 
@@ -336,4 +340,6 @@ public class HomebrewEntryServiceImpl implements HomebrewEntryService {
 
         return responses;
     }
+
+
 }
