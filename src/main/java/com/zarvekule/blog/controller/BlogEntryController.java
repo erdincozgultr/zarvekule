@@ -1,5 +1,11 @@
 package com.zarvekule.blog.controller;
 
+import com.zarvekule.blog.dto.BlogStatusUpdateRequest;
+import com.zarvekule.blog.entity.BlogEntry;
+import com.zarvekule.blog.mapper.BlogEntryMapper;
+import com.zarvekule.exceptions.ApiException;
+import com.zarvekule.user.entity.User;
+import org.springframework.security.access.AccessDeniedException;
 import com.zarvekule.blog.dto.BlogEntryRequest;
 import com.zarvekule.blog.dto.BlogEntryResponse;
 import com.zarvekule.blog.dto.BlogEntrySummary;
@@ -11,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -22,6 +29,7 @@ import java.util.List;
 public class BlogEntryController {
 
     private final BlogEntryService blogService;
+    private final BlogEntryMapper blogEntryMapper;
 
     @GetMapping("/list/public")
     public ResponseEntity<Page<BlogEntrySummary>> getPublishedBlogs(Pageable pageable) {
@@ -64,6 +72,39 @@ public class BlogEntryController {
                                            @PathVariable Long id) {
         blogService.delete(principal.getName(), id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('WRITER', 'ADMIN')")
+    public ResponseEntity<BlogEntryResponse> updateBlogStatus(
+            Principal principal,
+            @PathVariable Long id,
+            @RequestBody @Valid BlogStatusUpdateRequest request
+    ) {
+        // Blog'u bul
+        BlogEntry blog = blogService.findById(id)
+                .orElseThrow(() -> new ApiException("Kullanıcı bulunamadı: " + id, HttpStatus.NOT_FOUND));
+
+        // Yetki kontrolü - Sadece kendi blogu veya admin
+        User currentUser = ((UserDetailsImpl) ((Authentication) principal).getPrincipal()).getUser();
+        boolean isOwner = blog.getAuthor().getId().equals(currentUser.getId());
+        boolean isAdmin = currentUser.getRoles().stream()
+                .anyMatch(role -> role.getName().equals(RoleName.ROLE_ADMIN));
+
+        if (!isOwner && !isAdmin) {
+            throw new AccessDeniedException("Bu blogu güncelleyemezsiniz");
+        }
+
+        // Sadece status güncelle (moderasyon ATLA!)
+        blog.setStatus(request.getStatus());
+
+        // Kaydet
+        BlogEntry updatedBlog = blogService.save(blog);
+
+        // Response
+        BlogEntryResponse response = blogEntryMapper.toResponseDto(updatedBlog);
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/me")

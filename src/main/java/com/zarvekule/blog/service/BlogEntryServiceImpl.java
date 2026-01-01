@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -195,5 +196,15 @@ public class BlogEntryServiceImpl implements BlogEntryService {
             finalSlug = slug + "-" + count++;
         }
         return finalSlug;
+    }
+
+    @Override
+    public Optional<BlogEntry> findById(Long id) {
+        return blogRepository.findById(id);
+    }
+
+    @Override
+    public BlogEntry save(BlogEntry blogEntry) {
+        return blogRepository.save(blogEntry);
     }
 }
