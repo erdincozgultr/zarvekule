@@ -79,6 +79,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/users/profile/**", "/api/users/summary/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/blogs/list/public/**", "/api/blogs/read/{slug}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/wall/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/guilds/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/campaigns/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/wiki/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/likes/**").permitAll()

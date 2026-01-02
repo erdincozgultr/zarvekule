@@ -27,6 +27,7 @@ public class GuildServiceImpl implements GuildService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final NotificationService notificationService;
+    private final QuestService questService;
 
     @Override
     @Transactional(readOnly = true)
@@ -110,6 +111,16 @@ public class GuildServiceImpl implements GuildService {
         guild.setXp(0);
 
         Guild saved = guildRepository.save(guild);
+
+        // ✅ YENİ: Otomatik quest generation
+        try {
+            questService.generateWeeklyQuests(saved);
+            questService.generateMonthlyQuests(saved);
+            log.info("Quests generated for new guild: {}", saved.getName());
+        } catch (Exception e) {
+            log.error("Failed to generate quests for guild: {}", saved.getName(), e);
+            // Guild oluşturma devam eder, quest hatası critical değil
+        }
 
         log.info("Yeni lonca oluşturuldu: {} by {}", guild.getName(), username);
 

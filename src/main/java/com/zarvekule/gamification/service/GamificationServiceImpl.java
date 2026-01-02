@@ -55,52 +55,6 @@ public class GamificationServiceImpl implements GamificationService {
     @Override
     @Transactional
     public void processAction(User user, ActionType action) {
-        // 1. Get or create user stats
-        UserStats stats = statsRepository.findByUser_Id(user.getId())
-                .orElseGet(() -> {
-                    UserStats s = new UserStats();
-                    s.setUser(user);
-                    return statsRepository.save(s);
-                });
-
-        // 2. Add individual XP
-        long oldXp = stats.getCurrentXp();
-        stats.setCurrentXp(oldXp + action.getXpValue());
-
-        // 3. Check rank change
-        RankTier oldRank = stats.getCurrentRank();
-        RankTier newRank = RankTier.getRankByXp(stats.getCurrentXp());
-
-        if (newRank != oldRank) {
-            stats.setCurrentRank(newRank);
-            notificationService.createNotification(
-                    user,
-                    "🎉 Rütbe Atladın!",
-                    "Yeni rütben: " + newRank.getTitle() + " (+" + action.getXpValue() + " XP)",
-                    NotificationType.SYSTEM,
-                    "/profil/" + user.getUsername()
-            );
-            log.info("User {} ranked up! {} -> {} (XP: {})",
-                    user.getUsername(), oldRank.getTitle(), newRank.getTitle(), stats.getCurrentXp());
-        }
-
-        // 4. Update counts and check badges
-        updateCountsAndCheckBadges(user, stats, action);
-
-        // 5. Save user stats
-        statsRepository.save(stats);
-
-        // ✅ 6. GUILD XP (YENİ!)
-        processGuildXp(user, action);
-
-        log.debug("Action processed - User: {}, Action: {}, XP: {} (+{})",
-                user.getUsername(), action.name(), stats.getCurrentXp(), action.getXpValue());
-    }
-
-    /**
-     * ✅ YENİ: Guild XP sistemi
-     */
-    private void processGuildXp(User user, ActionType action) {
         // Kullanıcının guild'ini bul
         Guild guild = guildRepository.findByMemberId(user.getId()).orElse(null);
 
@@ -140,9 +94,22 @@ public class GamificationServiceImpl implements GamificationService {
 
         guildRepository.save(guild);
 
+        // ✅ YENİ: Quest progress'i güncelle
+        try {
+            questService.updateQuestProgress(guild);
+            log.debug("Quest progress updated for guild: {}", guild.getName());
+        } catch (Exception e) {
+            log.error("Failed to update quest progress for guild: {}", guild.getName(), e);
+        }
+
         log.debug("Guild XP processed - Guild: {}, XP: {} (+{}), Level: {}",
                 guild.getName(), newGuildXp, guildXpAmount, newLevel);
     }
+
+    /**
+     * ✅ YENİ: Guild XP sistemi
+     */
+    private final QuestService questService;
 
     /**
      * Guild level hesaplama

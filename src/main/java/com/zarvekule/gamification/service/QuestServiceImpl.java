@@ -4,9 +4,11 @@ import com.zarvekule.exceptions.ApiException;
 import com.zarvekule.gamification.dto.QuestDto;
 import com.zarvekule.gamification.entity.Guild;
 import com.zarvekule.gamification.entity.Quest;
+import com.zarvekule.gamification.entity.UserStats;
 import com.zarvekule.gamification.enums.QuestType;
 import com.zarvekule.gamification.repository.GuildRepository;
 import com.zarvekule.gamification.repository.QuestRepository;
+import com.zarvekule.gamification.repository.UserStatsRepository;
 import com.zarvekule.notification.enums.NotificationType;
 import com.zarvekule.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class QuestServiceImpl implements QuestService {
     private final QuestRepository questRepository;
     private final GuildRepository guildRepository;
     private final NotificationService notificationService;
+    private final UserStatsRepository statsRepository;
 
     @Override
     @Transactional
@@ -182,13 +185,20 @@ public class QuestServiceImpl implements QuestService {
     }
 
     private int calculateHomebrewCount(Guild guild) {
-        // Simplified - gerçekte UserStats'den toplanmalı
-        return guild.getMembers().size() * 2; // Placeholder
+        // Guild üyelerinin toplam homebrew sayısı (UserStats'ten)
+        return guild.getMembers().stream()
+                .map(member -> statsRepository.findByUser_Id(member.getId()).orElse(null))
+                .filter(stats -> stats != null)
+                .mapToInt(UserStats::getTotalHomebrews)
+                .sum();
     }
-
     private int calculateBlogCount(Guild guild) {
-        // Simplified - gerçekte UserStats'den toplanmalı
-        return guild.getMembers().size() * 1; // Placeholder
+        // Guild üyelerinin toplam blog sayısı (UserStats'ten)
+        return guild.getMembers().stream()
+                .map(member -> statsRepository.findByUser_Id(member.getId()).orElse(null))
+                .filter(stats -> stats != null)
+                .mapToInt(UserStats::getTotalBlogs)
+                .sum();
     }
 
     private QuestDto toDto(Quest quest) {
