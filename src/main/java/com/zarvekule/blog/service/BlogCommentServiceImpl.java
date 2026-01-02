@@ -48,7 +48,7 @@ public class BlogCommentServiceImpl implements BlogCommentService {
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch(role -> role.equals("ROLE_ADMIN") || role.equals("ROLE_MODERATOR"));
 
-        comment.setApproved(isPrivileged);
+        comment.setApproved(true);
 
         commentRepository.save(comment);
     }

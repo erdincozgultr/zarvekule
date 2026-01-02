@@ -199,12 +199,44 @@ public class BlogEntryServiceImpl implements BlogEntryService {
     }
 
     @Override
-    public Optional<BlogEntry> findById(Long id) {
-        return blogRepository.findById(id);
-    }
+    @Transactional
+    public BlogEntryResponse updateStatus(String authenticatedUsername, Long id, BlogStatus newStatus) {
+        // Blog'u bul
+        BlogEntry blogEntry = blogRepository.findById(id)
+                .orElseThrow(() -> new ApiException(
+                        "Blog yazısı bulunamadı. ID: " + id,
+                        HttpStatus.NOT_FOUND
+                ));
 
-    @Override
-    public BlogEntry save(BlogEntry blogEntry) {
-        return blogRepository.save(blogEntry);
+        // Current user'ı bul
+        User currentUser = userRepository.findByUsername(authenticatedUsername)
+                .orElseThrow(() -> new ApiException(
+                        "Geçerli kullanıcı bulunamadı.",
+                        HttpStatus.UNAUTHORIZED
+                ));
+
+        // Yetki kontrolü - Sadece kendi blogu veya admin
+        boolean isAuthor = Objects.equals(
+                blogEntry.getAuthor().getUsername(),
+                authenticatedUsername
+        );
+        boolean isAdmin = currentUser.getAuthorities().stream()
+                .anyMatch(r -> r.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!isAuthor && !isAdmin) {
+            throw new ApiException(
+                    "Bu blog yazısının durumunu değiştirme yetkiniz yok.",
+                    HttpStatus.FORBIDDEN
+            );
+        }
+
+        // Sadece status güncelle (moderasyon ATLA!)
+        blogEntry.setStatus(newStatus);
+
+        // Kaydet
+        BlogEntry updatedBlog = blogRepository.save(blogEntry);
+
+        // Response
+        return blogMapper.toResponseDto(updatedBlog);
     }
 }
