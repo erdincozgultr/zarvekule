@@ -9,6 +9,8 @@ import com.zarvekule.blog.enums.BlogCategory; // Import eklemeyi unutma
 import com.zarvekule.blog.enums.BlogStatus;
 import com.zarvekule.blog.mapper.BlogEntryMapper;
 import com.zarvekule.blog.repository.BlogEntryRepository;
+import com.zarvekule.gamification.enums.ActionType;
+import com.zarvekule.gamification.service.GamificationService;
 import com.zarvekule.user.entity.User;
 import com.zarvekule.user.repository.UserRepository;
 import com.zarvekule.util.SlugUtils;
@@ -32,6 +34,7 @@ public class BlogEntryServiceImpl implements BlogEntryService {
     private final BlogEntryRepository blogRepository;
     private final UserRepository userRepository;
     private final BlogEntryMapper blogMapper;
+    private final GamificationService gamificationService;
 
     // Ortalama okuma hızı (kelime/dakika)
     private static final int WORDS_PER_MINUTE = 200;
@@ -61,12 +64,24 @@ public class BlogEntryServiceImpl implements BlogEntryService {
         blogEntry.setSeoDescription(request.getSeoDescription());
         // --------------------
 
-        blogEntry.setStatus(BlogStatus.DRAFT);
+        BlogStatus status = request.getStatus() != null ?
+                request.getStatus() : BlogStatus.DRAFT;
+        blogEntry.setStatus(status);
         blogEntry.setCreatedAt(LocalDateTime.now());
 
-        blogEntry = blogRepository.save(blogEntry);
+        // Eğer direkt PUBLISHED ise publishedAt set et
+        if (status == BlogStatus.PUBLISHED) {
+            blogEntry.setPublishedAt(LocalDateTime.now());
+        }
 
-        return blogMapper.toResponseDto(blogEntry);
+        BlogEntry saved = blogRepository.save(blogEntry);
+
+        // ✅ YENİ: Eğer PUBLISHED ise XP ver
+        if (status == BlogStatus.PUBLISHED) {
+            gamificationService.processAction(author, ActionType.CREATE_BLOG);
+        }
+
+        return blogMapper.toResponseDto(saved);
     }
 
     @Override
@@ -79,29 +94,30 @@ public class BlogEntryServiceImpl implements BlogEntryService {
             throw new ApiException("Bu blog yazısını güncelleme yetkiniz yok.", HttpStatus.FORBIDDEN);
         }
 
+        // Eski status'u sakla
+        BlogStatus oldStatus = blogEntry.getStatus();
+
         blogEntry.setTitle(request.getTitle());
         blogEntry.setContent(request.getContent());
         blogEntry.setThumbnailUrl(request.getThumbnailUrl());
         blogEntry.setTags(request.getTags());
 
-        // --- YENİ ALANLAR GÜNCELLEME ---
         if (request.getCategory() != null) {
             blogEntry.setCategory(request.getCategory());
         }
-        // İçerik değiştiyse okuma süresini tekrar hesapla
         blogEntry.setReadingTime(calculateReadingTime(request.getContent()));
-
         blogEntry.setSeoTitle(request.getSeoTitle());
         blogEntry.setSeoDescription(request.getSeoDescription());
-        // -------------------------------
-
         blogEntry.setUpdatedAt(LocalDateTime.now());
 
         BlogStatus newStatus = request.getStatus();
         if (newStatus != null) {
             blogEntry.setStatus(newStatus);
-            if (newStatus == BlogStatus.PUBLISHED && blogEntry.getPublishedAt() == null) {
+
+            // ✅ YENİ: İlk kez PUBLISHED oluyorsa XP ver
+            if (newStatus == BlogStatus.PUBLISHED && oldStatus != BlogStatus.PUBLISHED) {
                 blogEntry.setPublishedAt(LocalDateTime.now());
+                gamificationService.processAction(blogEntry.getAuthor(), ActionType.CREATE_BLOG);
             }
         }
 
@@ -112,9 +128,10 @@ public class BlogEntryServiceImpl implements BlogEntryService {
             }
         }
 
-        blogEntry = blogRepository.save(blogEntry);
-        return blogMapper.toResponseDto(blogEntry);
+        BlogEntry saved = blogRepository.save(blogEntry);
+        return blogMapper.toResponseDto(saved);
     }
+
 
     // Diğer metodlar aynı kalabilir...
 

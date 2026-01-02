@@ -14,6 +14,8 @@ import com.zarvekule.campaign.mapper.CampaignMapper;
 import com.zarvekule.campaign.repository.CampaignApplicationRepository;
 import com.zarvekule.campaign.repository.CampaignRepository;
 import com.zarvekule.exceptions.ApiException;
+import com.zarvekule.gamification.enums.ActionType;
+import com.zarvekule.gamification.service.GamificationService;
 import com.zarvekule.notification.enums.NotificationType;
 import com.zarvekule.notification.service.NotificationService;
 import com.zarvekule.user.entity.Role;
@@ -40,6 +42,7 @@ public class CampaignServiceImpl implements CampaignService {
     private final CampaignMapper campaignMapper;
     private final NotificationService notificationService;
     private final AuditService auditService;
+    private final GamificationService gamificationService;
 
     @Override
     @Transactional
@@ -63,8 +66,12 @@ public class CampaignServiceImpl implements CampaignService {
         campaign.setStatus(CampaignStatus.OPEN);
         campaign.setCreatedAt(LocalDateTime.now());
 
-        campaign = campaignRepository.save(campaign);
-        return campaignMapper.toResponse(campaign);
+        Campaign saved = campaignRepository.save(campaign);
+
+        // ✅ YENİ: Campaign oluşturuldu, XP ver
+        gamificationService.processAction(dm, ActionType.CREATE_CAMPAIGN);
+
+        return campaignMapper.toResponse(saved);
     }
 
     @Override
@@ -112,9 +119,12 @@ public class CampaignServiceImpl implements CampaignService {
                 campaign.getDungeonMaster(),
                 "Yeni Oyuncu Başvurusu",
                 player.getUsername() + ", '" + campaign.getTitle() + "' oyununa katılmak istiyor.",
-                NotificationType.CAMPAIGN_JOIN,
-                "/campaigns/" + campaign.getId() + "/applications"
+                NotificationType.CAMPAIGN_STATUS,
+                null
         );
+
+        // ✅ YENİ: Kampanyaya başvuru yaptı, XP ver
+        gamificationService.processAction(player, ActionType.JOIN_CAMPAIGN);
     }
 
     @Override

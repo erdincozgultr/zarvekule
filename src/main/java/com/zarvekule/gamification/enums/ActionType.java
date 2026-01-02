@@ -9,6 +9,7 @@ public enum ActionType {
     CREATE_HOMEBREW(50),
     CREATE_BLOG(30),
     CREATE_CAMPAIGN(40),
+    JOIN_CAMPAIGN(20),
     RECEIVE_LIKE(2);
 
     private final int xpValue;
