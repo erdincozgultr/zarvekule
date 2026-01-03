@@ -11,4 +11,5 @@ public class GuildLeaderboardDto {
     private long xp;
     private int memberCount;
     private String leaderUsername;
+    private int questsCompleted;
 }

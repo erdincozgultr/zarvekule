@@ -19,4 +19,8 @@ public class UserResponseDto {
 
     private LocalDateTime createdAt;
     private List<String> roles;
+
+    private Long currentXp;
+    private String currentRank;
+    private String rankTitle;
 }

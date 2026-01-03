@@ -6,6 +6,8 @@ import com.zarvekule.gamification.dto.LeaderboardEntryDto;
 import com.zarvekule.gamification.entity.Guild;
 import com.zarvekule.gamification.entity.UserStats;
 import com.zarvekule.gamification.repository.GuildRepository;
+import com.zarvekule.gamification.repository.QuestRepository;
+import com.zarvekule.gamification.repository.UserBadgeRepository;
 import com.zarvekule.gamification.repository.UserStatsRepository;
 import com.zarvekule.homebrew.entity.HomebrewEntry;
 import com.zarvekule.homebrew.enums.HomebrewStatus;
@@ -31,6 +33,8 @@ public class LeaderboardServiceImpl implements LeaderboardService {
     private final HomebrewEntryRepository homebrewRepository;
     private final GuildRepository guildRepository;
     private final UserMapper userMapper;
+    private final UserBadgeRepository userBadgeRepository;
+    private final QuestRepository questRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -153,6 +157,99 @@ public class LeaderboardServiceImpl implements LeaderboardService {
             dto.setXp(guild.getXp());
             dto.setMemberCount(guild.getMembers() != null ? guild.getMembers().size() : 0);
             dto.setLeaderUsername(guild.getLeader() != null ? guild.getLeader().getUsername() : "N/A");
+            result.add(dto);
+        }
+
+        return result;
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LeaderboardEntryDto> getTopUsersByBadges(int limit) {
+        // Kullanıcıların badge sayılarını hesapla
+        List<UserStats> allStats = statsRepository.findAll();
+
+        // Her kullanıcının badge count'unu hesapla ve sırala
+        List<UserStats> sortedStats = allStats.stream()
+                .sorted((s1, s2) -> {
+                    int badges1 = userBadgeRepository.countByUser_Id(s1.getUser().getId());
+                    int badges2 = userBadgeRepository.countByUser_Id(s2.getUser().getId());
+                    return Integer.compare(badges2, badges1);
+                })
+                .limit(limit)
+                .collect(Collectors.toList());
+
+        List<LeaderboardEntryDto> result = new ArrayList<>();
+        for (int i = 0; i < sortedStats.size(); i++) {
+            UserStats stats = sortedStats.get(i);
+            int badgeCount = userBadgeRepository.countByUser_Id(stats.getUser().getId());
+
+            LeaderboardEntryDto dto = new LeaderboardEntryDto();
+            dto.setRank(i + 1);
+            dto.setUser(userMapper.toSummaryDto(stats.getUser()));
+            dto.setValue(badgeCount);
+            dto.setRankTier(stats.getCurrentRank().getTitle());
+            result.add(dto);
+        }
+
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LeaderboardEntryDto> getTopUsersByComments(int limit) {
+        List<UserStats> allStats = statsRepository.findAll();
+
+        // Yorum sayısına göre sırala
+        List<UserStats> sortedStats = allStats.stream()
+                .sorted(Comparator.comparingInt(UserStats::getTotalComments).reversed())
+                .limit(limit)
+                .collect(Collectors.toList());
+
+        List<LeaderboardEntryDto> result = new ArrayList<>();
+        for (int i = 0; i < sortedStats.size(); i++) {
+            UserStats stats = sortedStats.get(i);
+            LeaderboardEntryDto dto = new LeaderboardEntryDto();
+            dto.setRank(i + 1);
+            dto.setUser(userMapper.toSummaryDto(stats.getUser()));
+            dto.setValue(stats.getTotalComments());
+            dto.setRankTier(stats.getCurrentRank().getTitle());
+            result.add(dto);
+        }
+
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<GuildLeaderboardDto> getTopGuildsByQuestsCompleted(int limit) {
+        List<Guild> allGuilds = guildRepository.findAll();
+
+        // Her guild'in tamamlanmış quest sayısını hesapla ve sırala
+        List<Guild> sortedGuilds = allGuilds.stream()
+                .sorted((g1, g2) -> {
+                    long quests1 = questRepository.countByGuild_IdAndCompletedTrue(g1.getId());
+                    long quests2 = questRepository.countByGuild_IdAndCompletedTrue(g2.getId());
+                    return Long.compare(quests2, quests1);
+                })
+                .limit(limit)
+                .collect(Collectors.toList());
+
+        List<GuildLeaderboardDto> result = new ArrayList<>();
+        for (int i = 0; i < sortedGuilds.size(); i++) {
+            Guild guild = sortedGuilds.get(i);
+            long questsCompleted = questRepository.countByGuild_IdAndCompletedTrue(guild.getId());
+
+            GuildLeaderboardDto dto = new GuildLeaderboardDto();
+            dto.setRank(i + 1);
+            dto.setGuildId(guild.getId());
+            dto.setGuildName(guild.getName());
+            dto.setLevel(guild.getLevel());
+            dto.setXp(guild.getXp());
+            dto.setMemberCount(guild.getMembers() != null ? guild.getMembers().size() : 0);
+            dto.setLeaderUsername(guild.getLeader() != null ? guild.getLeader().getUsername() : "N/A");
+            dto.setQuestsCompleted((int) questsCompleted); // ✅ YENİ field
             result.add(dto);
         }
 

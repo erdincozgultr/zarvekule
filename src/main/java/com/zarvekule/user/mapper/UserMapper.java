@@ -1,14 +1,19 @@
 package com.zarvekule.user.mapper;
 
+import com.zarvekule.gamification.entity.UserStats;
+import com.zarvekule.gamification.repository.UserStatsRepository;
 import com.zarvekule.user.dto.*;
 import com.zarvekule.user.entity.User;
-import com.zarvekule.user.entity.Role;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
 
 @Component
+@RequiredArgsConstructor
 public class UserMapper {
+
+    private final UserStatsRepository userStatsRepository;
 
     public UserResponseDto toResponseDto(User user) {
         if (user == null) return null;
@@ -29,6 +34,18 @@ public class UserMapper {
             dto.setRoles(user.getRoles().stream()
                     .map(role -> role.getName().name())
                     .collect(Collectors.toList()));
+        }
+
+        // ✅ YENİ: Stats ekle
+        UserStats stats = userStatsRepository.findByUser_Id(user.getId()).orElse(null);
+        if (stats != null) {
+            dto.setCurrentXp(stats.getCurrentXp());
+            dto.setCurrentRank(stats.getCurrentRank().name());
+            dto.setRankTitle(stats.getCurrentRank().getTitle());
+        } else {
+            dto.setCurrentXp(0L);
+            dto.setCurrentRank("PEASANT");
+            dto.setRankTitle("Köylü");
         }
 
         return dto;

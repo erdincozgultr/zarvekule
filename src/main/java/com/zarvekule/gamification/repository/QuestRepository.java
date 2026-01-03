@@ -1,6 +1,7 @@
 package com.zarvekule.gamification.repository;
 
 import com.zarvekule.gamification.entity.Quest;
+import com.zarvekule.gamification.enums.QuestType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,6 +15,12 @@ public interface QuestRepository extends JpaRepository<Quest, Long> {
     List<Quest> findByGuildIdOrderByCreatedAtDesc(Long guildId);
 
     List<Quest> findByDeadlineBeforeAndCompletedFalse(LocalDateTime deadline);
+
+    boolean existsByGuild_IdAndTypeAndCompletedFalse(Long guildId, QuestType type);
+
+
+    long countByGuild_IdAndCompletedTrue(Long guildId);
+
 }
 
 

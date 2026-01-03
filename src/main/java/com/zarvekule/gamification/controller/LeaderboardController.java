@@ -66,4 +66,34 @@ public class LeaderboardController {
             @RequestParam(defaultValue = "10") int limit) {
         return ResponseEntity.ok(leaderboardService.getTopGuildsByLevel(limit));
     }
+
+    /**
+     * ✅ YENİ: Rozet sayısına göre top kullanıcılar
+     * GET /api/leaderboard/users/badges?limit=50
+     */
+    @GetMapping("/users/badges")
+    public ResponseEntity<List<LeaderboardEntryDto>> getTopUsersByBadges(
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(leaderboardService.getTopUsersByBadges(limit));
+    }
+
+    /**
+     * ✅ YENİ: Yorum sayısına göre top kullanıcılar
+     * GET /api/leaderboard/users/comments?limit=50
+     */
+    @GetMapping("/users/comments")
+    public ResponseEntity<List<LeaderboardEntryDto>> getTopUsersByComments(
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(leaderboardService.getTopUsersByComments(limit));
+    }
+
+    /**
+     * ✅ YENİ: Tamamlanan quest sayısına göre top guild'ler
+     * GET /api/leaderboard/guilds/quests?limit=50
+     */
+    @GetMapping("/guilds/quests")
+    public ResponseEntity<List<GuildLeaderboardDto>> getTopGuildsByQuests(
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(leaderboardService.getTopGuildsByQuestsCompleted(limit));
+    }
 }

@@ -30,8 +30,9 @@ public class GamificationServiceImpl implements GamificationService {
     private final UserStatsRepository statsRepository;
     private final UserBadgeRepository userBadgeRepository;
     private final BadgeRepository badgeRepository;
-    private final GuildRepository guildRepository;  // ✅ YENİ
+    private final GuildRepository guildRepository;
     private final NotificationService notificationService;
+    private final QuestService questService;
 
     @Override
     @Transactional
@@ -55,6 +56,64 @@ public class GamificationServiceImpl implements GamificationService {
     @Override
     @Transactional
     public void processAction(User user, ActionType action) {
+        // ============================================
+        // 1. GET OR CREATE USER STATS
+        // ============================================
+        UserStats stats = statsRepository.findByUser_Id(user.getId())
+                .orElseGet(() -> {
+                    UserStats s = new UserStats();
+                    s.setUser(user);
+                    return statsRepository.save(s);
+                });
+
+        // ============================================
+        // 2. ADD INDIVIDUAL XP
+        // ============================================
+        long oldXp = stats.getCurrentXp();
+        stats.setCurrentXp(oldXp + action.getXpValue());
+
+        // ============================================
+        // 3. CHECK RANK CHANGE
+        // ============================================
+        RankTier oldRank = stats.getCurrentRank();
+        RankTier newRank = RankTier.getRankByXp(stats.getCurrentXp());
+
+        if (newRank != oldRank) {
+            stats.setCurrentRank(newRank);
+            notificationService.createNotification(
+                    user,
+                    "🎉 Rütbe Atladın!",
+                    "Yeni rütben: " + newRank.getTitle() + " (+" + action.getXpValue() + " XP)",
+                    NotificationType.SYSTEM,
+                    "/profil/" + user.getUsername()
+            );
+            log.info("User {} ranked up! {} -> {} (XP: {})",
+                    user.getUsername(), oldRank.getTitle(), newRank.getTitle(), stats.getCurrentXp());
+        }
+
+        // ============================================
+        // 4. UPDATE COUNTS AND CHECK BADGES
+        // ============================================
+        updateCountsAndCheckBadges(user, stats, action);
+
+        // ============================================
+        // 5. SAVE USER STATS
+        // ============================================
+        statsRepository.save(stats);
+
+        // ============================================
+        // 6. GUILD XP (IF IN GUILD)
+        // ============================================
+        processGuildXp(user, action);
+
+        log.debug("Action processed - User: {}, Action: {}, XP: {} (+{})",
+                user.getUsername(), action.name(), stats.getCurrentXp(), action.getXpValue());
+    }
+
+    /**
+     * Guild XP sistemi
+     */
+    private void processGuildXp(User user, ActionType action) {
         // Kullanıcının guild'ini bul
         Guild guild = guildRepository.findByMemberId(user.getId()).orElse(null);
 
@@ -94,7 +153,7 @@ public class GamificationServiceImpl implements GamificationService {
 
         guildRepository.save(guild);
 
-        // ✅ YENİ: Quest progress'i güncelle
+        // Quest progress'i güncelle
         try {
             questService.updateQuestProgress(guild);
             log.debug("Quest progress updated for guild: {}", guild.getName());
@@ -107,16 +166,7 @@ public class GamificationServiceImpl implements GamificationService {
     }
 
     /**
-     * ✅ YENİ: Guild XP sistemi
-     */
-    private final QuestService questService;
-
-    /**
      * Guild level hesaplama
-     * Level 1:     0 - 4,999 XP
-     * Level 2: 5,000 - 14,999 XP
-     * Level 3: 15,000 - 29,999 XP
-     * Formula: 5000 * level * level
      */
     private int calculateGuildLevel(long xp) {
         if (xp < 5000) return 1;
@@ -132,6 +182,9 @@ public class GamificationServiceImpl implements GamificationService {
         return level - 1;
     }
 
+    /**
+     * Count'ları güncelle ve badge kontrol et
+     */
     private void updateCountsAndCheckBadges(User user, UserStats stats, ActionType action) {
         switch (action) {
             case POST_COMMENT -> {
@@ -159,9 +212,18 @@ public class GamificationServiceImpl implements GamificationService {
                 checkAndGiveBadge(user, "MID_LIKED", stats.getTotalLikesReceived() >= 100);
                 checkAndGiveBadge(user, "MOST_LIKED", stats.getTotalLikesReceived() >= 200);
             }
+            case CREATE_CAMPAIGN -> {
+                // Campaign için özel badge yok şimdilik, sadece XP
+            }
+            case JOIN_CAMPAIGN -> {
+                // Join campaign için özel badge yok şimdilik, sadece XP
+            }
         }
     }
 
+    /**
+     * Badge kontrol ve ver
+     */
     private void checkAndGiveBadge(User user, String conditionCode, boolean conditionMet) {
         if (!conditionMet) return;
 
@@ -181,7 +243,7 @@ public class GamificationServiceImpl implements GamificationService {
                     user,
                     "🏆 Yeni Rozet Kazandın!",
                     "Koleksiyonuna '" + badge.getName() + "' eklendi.",
-                    NotificationType.BADGE_EARNED,
+                    NotificationType.SYSTEM,
                     "/profil/" + user.getUsername() + "?tab=badges"
             );
 

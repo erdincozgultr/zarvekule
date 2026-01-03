@@ -32,4 +32,23 @@ public interface LeaderboardService {
      * Seviyeye göre top guild'ler
      */
     List<GuildLeaderboardDto> getTopGuildsByLevel(int limit);
+
+    // ============================================
+    // ✅ YENİ METODLAR
+    // ============================================
+
+    /**
+     * Rozet sayısına göre top kullanıcılar
+     */
+    List<LeaderboardEntryDto> getTopUsersByBadges(int limit);
+
+    /**
+     * Yorum sayısına göre top kullanıcılar
+     */
+    List<LeaderboardEntryDto> getTopUsersByComments(int limit);
+
+    /**
+     * Tamamlanan quest sayısına göre top guild'ler
+     */
+    List<GuildLeaderboardDto> getTopGuildsByQuestsCompleted(int limit);
 }
