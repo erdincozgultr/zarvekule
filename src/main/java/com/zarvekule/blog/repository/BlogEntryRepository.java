@@ -32,4 +32,10 @@ public interface BlogEntryRepository extends JpaRepository<BlogEntry, Long> {
             "(LOWER(b.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
             "LOWER(b.content) LIKE LOWER(CONCAT('%', :query, '%')))")
     List<BlogEntry> searchPublic(@Param("query") String query);
+
+    long countByAuthorIdInAndCreatedAtAfter(List<Long> authorIds, LocalDateTime createdAt);
+
+    long countByAuthorIdAndCreatedAtAfter(Long authorId, LocalDateTime createdAt);
+
+    List<BlogEntry> findTop10ByAuthorIdInOrderByCreatedAtDesc(List<Long> authorIds);
 }

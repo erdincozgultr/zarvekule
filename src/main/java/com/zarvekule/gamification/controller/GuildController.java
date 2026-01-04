@@ -1,9 +1,11 @@
 package com.zarvekule.gamification.controller;
 
 import com.zarvekule.gamification.dto.*;
+import com.zarvekule.gamification.service.GuildContributionService;
 import com.zarvekule.gamification.service.GuildService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,6 +20,8 @@ import java.util.List;
 public class GuildController {
 
     private final GuildService guildService;
+    private final GuildContributionService contributionService;
+
 
     /**
      * Tüm guild'leri listele
@@ -120,5 +124,12 @@ public class GuildController {
             @PathVariable Long memberId) {
         guildService.kickMember(principal.getName(), id, memberId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/contributions")
+    public ResponseEntity<GuildContributionsDto> getGuildContributions(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "monthly") String period) {
+        return ResponseEntity.ok(contributionService.getGuildContributions(id, period));
     }
 }

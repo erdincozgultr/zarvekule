@@ -40,6 +40,10 @@ public class Guild {
 
     private long xp = 0;
 
+    private String bannerUrl;
+    private String avatarUrl;
+    private String discordWebhookUrl;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;

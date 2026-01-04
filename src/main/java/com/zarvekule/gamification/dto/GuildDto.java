@@ -15,5 +15,8 @@ public class GuildDto {
     private int memberCount;
     private UserSummaryDto leader;
     private LocalDateTime createdAt;
+    private String bannerUrl;
+    private String avatarUrl;
+    private String discordWebhookUrl;
     private boolean currentUserIsMember; // Kullanıcı bu guild'in üyesi mi? (isMember yerine)
 }

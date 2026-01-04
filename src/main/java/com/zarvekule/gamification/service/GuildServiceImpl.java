@@ -109,6 +109,9 @@ public class GuildServiceImpl implements GuildService {
         guild.getMembers().add(leader);
         guild.setLevel(1);
         guild.setXp(0);
+        guild.setBannerUrl(request.bannerUrl());
+        guild.setAvatarUrl(request.avatarUrl());
+        guild.setDiscordWebhookUrl(request.discordWebhookUrl());
 
         Guild saved = guildRepository.save(guild);
 
@@ -137,6 +140,9 @@ public class GuildServiceImpl implements GuildService {
         if (guild.getLeader() == null || !guild.getLeader().getUsername().equals(username)) {
             throw new ApiException("Sadece lonca lideri güncelleyebilir", HttpStatus.FORBIDDEN);
         }
+        if (request.bannerUrl() != null) guild.setBannerUrl(request.bannerUrl());
+        if (request.avatarUrl() != null) guild.setAvatarUrl(request.avatarUrl());
+        if (request.discordWebhookUrl() != null) guild.setDiscordWebhookUrl(request.discordWebhookUrl());
 
         if (request.description() != null) {
             guild.setDescription(request.description());
@@ -290,6 +296,8 @@ public class GuildServiceImpl implements GuildService {
         dto.setLevel(guild.getLevel());
         dto.setXp(guild.getXp());
         dto.setCreatedAt(guild.getCreatedAt());
+        dto.setBannerUrl(guild.getBannerUrl());
+        dto.setAvatarUrl(guild.getAvatarUrl());
         dto.setMemberCount(guild.getMembers() != null ? guild.getMembers().size() : 0);
         dto.setLeader(guild.getLeader() != null ? userMapper.toSummaryDto(guild.getLeader()) : null);
 
@@ -306,6 +314,11 @@ public class GuildServiceImpl implements GuildService {
         dto.setLevel(guild.getLevel());
         dto.setXp(guild.getXp());
         dto.setXpForNextLevel(1000L); // Her 1000 XP'de level atlıyor varsayımı
+        dto.setBannerUrl(guild.getBannerUrl());
+        dto.setAvatarUrl(guild.getAvatarUrl());
+        if (isLeader) {
+            dto.setDiscordWebhookUrl(guild.getDiscordWebhookUrl());
+        }
         dto.setMemberCount(guild.getMembers() != null ? guild.getMembers().size() : 0);
         dto.setCreatedAt(guild.getCreatedAt());
 

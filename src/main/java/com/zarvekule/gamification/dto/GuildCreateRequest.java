@@ -9,5 +9,9 @@ public record GuildCreateRequest(
         String name,
 
         @Size(max = 500, message = "Açıklama en fazla 500 karakter olabilir")
-        String description
+        String description,
+
+        String bannerUrl,
+        String avatarUrl,
+        String discordWebhookUrl
 ) {}

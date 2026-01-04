@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -102,4 +103,13 @@ public interface HomebrewEntryRepository extends JpaRepository<HomebrewEntry, Lo
     // ============================================
 
     long countByStatusAndCategory(HomebrewStatus status, HomebrewCategory category);
+
+    // Lonca üyelerinin homebrew'larını say
+    long countByAuthorIdInAndCreatedAtAfter(List<Long> authorIds, LocalDateTime createdAt);
+
+    // Tek üyenin homebrew'larını say
+    long countByAuthorIdAndCreatedAtAfter(Long authorId, LocalDateTime createdAt);
+
+    // Son 10 homebrew
+    List<HomebrewEntry> findTop10ByAuthorIdInOrderByCreatedAtDesc(List<Long> authorIds);
 }

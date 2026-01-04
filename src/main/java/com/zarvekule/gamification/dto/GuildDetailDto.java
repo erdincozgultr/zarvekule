@@ -17,6 +17,9 @@ public class GuildDetailDto {
     private GuildMemberDto leader;          // Lonca lideri bilgisi
     private List<GuildMemberDto> members;
     private LocalDateTime createdAt;
+    private String bannerUrl;
+    private String avatarUrl;
+    private String discordWebhookUrl;
 
     // İsimlendirme değiştirildi - Lombok setter çakışmasını önlemek için
     private boolean currentUserIsMember;    // Mevcut kullanıcı üye mi?
