@@ -76,9 +76,7 @@ public class BadgeServiceImpl implements BadgeService {
         return dto;
     }
 
-    /**
-     * Badge'i DTO'ya çevir (kullanıcı bilgisi ile)
-     */
+    // BadgeServiceImpl.java - toDto metodunda
     private BadgeDto toDto(Badge badge, UserBadge userBadge) {
         BadgeDto dto = new BadgeDto();
         dto.setId(badge.getId());
@@ -86,14 +84,13 @@ public class BadgeServiceImpl implements BadgeService {
         dto.setDescription(badge.getDescription());
         dto.setIconUrl(badge.getIconUrl());
         dto.setConditionCode(badge.getConditionCode());
+        dto.setCategory(badge.getCategory().name());
 
-        // Kullanıcı bu badge'i kazandı mı?
         if (userBadge != null) {
             dto.setEarned(true);
             dto.setEarnedAt(userBadge.getEarnedAt());
         } else {
             dto.setEarned(false);
-            dto.setEarnedAt(null);
         }
 
         return dto;

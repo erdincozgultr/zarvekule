@@ -33,7 +33,7 @@ public class InitialDataLoader implements CommandLineRunner {
 
         createAdminUserIfNotFound();
 
-        createBadges();
+        createInitialBadges();
     }
 
     private void createRolesIfNotFound() {
@@ -70,49 +70,335 @@ public class InitialDataLoader implements CommandLineRunner {
         }
     }
 
-    private void createBadges() {
-        // --- 1. EŞSİZLER ---
-        createBadgeIfNotFound("İlk Ses", "FIRST_COMMENT", "Sessizliği bozdun! İlk yorumunu yaptın.", "icon_first_comment.png", FIRST_STEPS);
-        createBadgeIfNotFound("Yaratılış Kıvılcımı", "FIRST_HOMEBREW", "İlk Homebrew içeriğini oluşturdun.", "icon_first_homebrew.png", FIRST_STEPS);
-        createBadgeIfNotFound("Hikaye Başlıyor", "FIRST_BLOG", "İlk Blog yazını paylaştın.", "icon_first_blog.png", FIRST_STEPS);
-        createBadgeIfNotFound("Halk Efsanesi", "MID_LIKED", "Bir içeriğin 100'den fazla beğeni aldı.", "icon_mid_liked.png", FIRST_STEPS);
-        createBadgeIfNotFound("Çağlar Kahramanı", "MOST_LIKED", "Bir içeriğin 200'den fazla beğeni aldı.", "icon_most_liked.png", FIRST_STEPS);
+    private void createInitialBadges() {
 
-        // --- 2. İÇERİK (Kademeli) ---
-        createBadgeIfNotFound("Çırak Tasarımcı", "BREWER_1", "1 Homebrew içeriği oluşturdun. (Bakır)", "icon_brewer_bronze.png", CREATOR);
-        createBadgeIfNotFound("Zanaatkar", "BREWER_10", "10 Homebrew içeriği oluşturdun. (Gümüş)", "icon_brewer_silver.png", CREATOR);
-        createBadgeIfNotFound("Usta", "BREWER_50", "50 Homebrew içeriği oluşturdun. (Altın)", "icon_brewer_gold.png", CREATOR);
-        createBadgeIfNotFound("Evren Mimarı", "BREWER_100", "100 Homebrew içeriği oluşturdun. (Altın)", "icon_brewer_platin.png", CREATOR);
+        // ==================== 1. İLK ADIMLAR ====================
+        createBadgeIfNotFound(
+                "Hoş Geldin!",
+                "PROFILE_COMPLETE",
+                "Profilini tamamladın",
+                "🎭",
+                BadgeCategory.FIRST_STEPS
+        );
 
-        // --- 3. SOSYAL (Kademeli) ---
-        createBadgeIfNotFound("Taverna Sakini", "COMMENT_10", "10 Yorum yaptın. (Bakır)", "icon_comment_bronze.png", COMMUNITY);
-        createBadgeIfNotFound("Söz Ustası", "COMMENT_50", "50 Yorum yaptın. (Gümüş)", "icon_comment_silver.png", COMMUNITY);
-        createBadgeIfNotFound("Bilge Ozan", "COMMENT_200", "200 Yorum yaptın. (Altın)", "icon_comment_gold.png", COMMUNITY);
-        createBadgeIfNotFound("İmparatorluk Ozanı", "COMMENT_500", "500 Yorum yaptın. (Altın)", "icon_comment_platin.png", COMMUNITY);
+        createBadgeIfNotFound(
+                "İlk Yorum",
+                "FIRST_COMMENT",
+                "İlk yorumunu yaptın",
+                "💬",
+                BadgeCategory.FIRST_STEPS
+        );
 
-        // --- 4. SADAKAT ---
-        createBadgeIfNotFound("Misafir", "MEMBER_3M", "3 aydır bizimlesin.", "icon_member_bronze.png", LOYALTY);
-        createBadgeIfNotFound("Sakin", "MEMBER_1Y", "1 yıldır bizimlesin.", "icon_member_silver.png", LOYALTY);
-        createBadgeIfNotFound("Vatandaş", "MEMBER_2Y", "2 yıldır bizimlesin.", "icon_member_silver.png", LOYALTY);
+        createBadgeIfNotFound(
+                "İlk Eser",
+                "FIRST_HOMEBREW",
+                "İlk homebrew'unu paylaştın",
+                "📜",
+                BadgeCategory.FIRST_STEPS
+        );
 
-        // --- 5. DONOR ---
-        createBadgeIfNotFound("Gezgin", "DONOR_TIER_1", "Tier 1 site bağışçısı", "icon_member_bronze.png", SUPPORTER);
-        createBadgeIfNotFound("Baron", "DONOR_TIER_2", "Tier 2 site bağışçısı", "icon_member_silver.png", SUPPORTER);
-        createBadgeIfNotFound("Lord", "DONOR_TIER_3", "Tier 3 site bağışçısı", "icon_member_gold.png", SUPPORTER);
-        createBadgeIfNotFound("Hami", "DONOR_TIER_4", "Tier 4 site bağışçısı", "icon_member_platin.png", SUPPORTER);
+        createBadgeIfNotFound(
+                "İlk Yazı",
+                "FIRST_BLOG",
+                "İlk blog yazını yazdın",
+                "✍️",
+                BadgeCategory.FIRST_STEPS
+        );
+
+        // ==================== 2. İÇERİK ÜRETİCİSİ ====================
+
+        // Homebrew rozetleri
+        createBadgeIfNotFound(
+                "Çırak Yaratıcı",
+                "BREWER_1",
+                "1 homebrew paylaştın",
+                "⚗️",
+                BadgeCategory.CONTENT_CREATOR
+        );
+
+        createBadgeIfNotFound(
+                "Usta Yaratıcı",
+                "BREWER_10",
+                "10 homebrew paylaştın (Bronz)",
+                "🥉",
+                BadgeCategory.CONTENT_CREATOR
+        );
+
+        createBadgeIfNotFound(
+                "Efsane Yaratıcı",
+                "BREWER_50",
+                "50 homebrew paylaştın (Gümüş)",
+                "🥈",
+                BadgeCategory.CONTENT_CREATOR
+        );
+
+        createBadgeIfNotFound(
+                "Tanrısal Yaratıcı",
+                "BREWER_100",
+                "100 homebrew paylaştın (Altın)",
+                "🥇",
+                BadgeCategory.CONTENT_CREATOR
+        );
+
+        // Blog rozetleri
+        createBadgeIfNotFound(
+                "Yazar",
+                "BLOGGER_5",
+                "5 blog yazısı yazdın",
+                "📝",
+                BadgeCategory.CONTENT_CREATOR
+        );
+
+        createBadgeIfNotFound(
+                "Kronikçi",
+                "BLOGGER_20",
+                "20 blog yazısı yazdın",
+                "📚",
+                BadgeCategory.CONTENT_CREATOR
+        );
+
+        createBadgeIfNotFound(
+                "Hikaye Ustası",
+                "BLOGGER_50",
+                "50 blog yazısı yazdın",
+                "🖋️",
+                BadgeCategory.CONTENT_CREATOR
+        );
+
+        // ==================== 3. TOPLULUK ====================
+
+        // Yorum rozetleri
+        createBadgeIfNotFound(
+                "Konuşkan",
+                "COMMENT_10",
+                "10 yorum yaptın",
+                "💭",
+                BadgeCategory.COMMUNITY
+        );
+
+        createBadgeIfNotFound(
+                "Hatip",
+                "COMMENT_50",
+                "50 yorum yaptın (Bronz)",
+                "🗣️",
+                BadgeCategory.COMMUNITY
+        );
+
+        createBadgeIfNotFound(
+                "Ozan",
+                "COMMENT_200",
+                "200 yorum yaptın (Gümüş)",
+                "🎤",
+                BadgeCategory.COMMUNITY
+        );
+
+        createBadgeIfNotFound(
+                "İmparatorluk Ozanı",
+                "COMMENT_500",
+                "500 yorum yaptın (Altın)",
+                "👑",
+                BadgeCategory.COMMUNITY
+        );
+
+        // Beğeni rozetleri
+        createBadgeIfNotFound(
+                "Sevilen",
+                "MID_LIKED",
+                "100 beğeni aldın",
+                "❤️",
+                BadgeCategory.COMMUNITY
+        );
+
+        createBadgeIfNotFound(
+                "Popüler",
+                "MOST_LIKED",
+                "500 beğeni aldın",
+                "⭐",
+                BadgeCategory.COMMUNITY
+        );
+
+        createBadgeIfNotFound(
+                "Efsane",
+                "SUPER_LIKED",
+                "1000 beğeni aldın",
+                "🌟",
+                BadgeCategory.COMMUNITY
+        );
+
+        // ==================== 4. TAVERNA (XP, GUILD) ====================
+
+        // XP rozetleri
+        createBadgeIfNotFound(
+                "Çaylak Maceracı",
+                "XP_1000",
+                "1,000 XP kazandın",
+                "🗡️",
+                BadgeCategory.TAVERNA
+        );
+
+        createBadgeIfNotFound(
+                "Deneyimli Gezgin",
+                "XP_5000",
+                "5,000 XP kazandın",
+                "⚔️",
+                BadgeCategory.TAVERNA
+        );
+
+        createBadgeIfNotFound(
+                "Kahraman",
+                "XP_10000",
+                "10,000 XP kazandın",
+                "🛡️",
+                BadgeCategory.TAVERNA
+        );
+
+        createBadgeIfNotFound(
+                "Efsane Savaşçı",
+                "XP_50000",
+                "50,000 XP kazandın",
+                "👑",
+                BadgeCategory.TAVERNA
+        );
+
+        // Guild rozetleri
+        createBadgeIfNotFound(
+                "Lonca Üyesi",
+                "GUILD_JOIN",
+                "Bir loncaya katıldın",
+                "🏰",
+                BadgeCategory.TAVERNA
+        );
+
+        createBadgeIfNotFound(
+                "Lonca Kurucusu",
+                "GUILD_FOUNDER",
+                "Bir lonca kurdun",
+                "🏛️",
+                BadgeCategory.TAVERNA
+        );
+
+        createBadgeIfNotFound(
+                "Lonca Lideri",
+                "GUILD_LEADER_ACTIVE",
+                "Aktif lonca liderisin",
+                "👑",
+                BadgeCategory.TAVERNA
+        );
+
+        // ==================== 5. PARTY FINDER ====================
+
+        createBadgeIfNotFound(
+                "Dungeon Master",
+                "DM_CREATE",
+                "İlk kampanyanı oluşturdun",
+                "🎲",
+                BadgeCategory.PARTY_FINDER
+        );
+
+        createBadgeIfNotFound(
+                "Oyuncu",
+                "PLAYER_JOIN",
+                "Bir kampanyaya katıldın",
+                "🎭",
+                BadgeCategory.PARTY_FINDER
+        );
+
+        createBadgeIfNotFound(
+                "Deneyimli DM",
+                "DM_5_CAMPAIGNS",
+                "5 kampanya oluşturdun",
+                "🎯",
+                BadgeCategory.PARTY_FINDER
+        );
+
+        createBadgeIfNotFound(
+                "Veteran Oyuncu",
+                "PLAYER_10_CAMPAIGNS",
+                "10 kampanyaya katıldın",
+                "🏅",
+                BadgeCategory.PARTY_FINDER
+        );
+
+        // ==================== 6. ÖZEL ROZETLER ====================
+
+        createBadgeIfNotFound(
+                "Öncü",
+                "EARLY_ADOPTER",
+                "Sitedeki ilk 100 kullanıcıdan birisin",
+                "🚀",
+                BadgeCategory.SPECIAL
+        );
+
+        createBadgeIfNotFound(
+                "Beta Savaşçısı",
+                "BETA_TESTER",
+                "Beta döneminde katıldın",
+                "🧪",
+                BadgeCategory.SPECIAL
+        );
+
+        // Sadakat rozetleri
+        createBadgeIfNotFound(
+                "Sadık Gezgin",
+                "MEMBER_3M",
+                "3 aydır bizimlesin",
+                "📅",
+                BadgeCategory.SPECIAL
+        );
+
+        createBadgeIfNotFound(
+                "Eski Dost",
+                "MEMBER_1Y",
+                "1 yıldır bizimlesin",
+                "🎂",
+                BadgeCategory.SPECIAL
+        );
+
+        createBadgeIfNotFound(
+                "Efsane Üye",
+                "MEMBER_2Y",
+                "2 yıldır bizimlesin",
+                "🏆",
+                BadgeCategory.SPECIAL
+        );
+
+        // Donor rozetleri
+        createBadgeIfNotFound(
+                "Destekçi",
+                "DONOR_TIER_1",
+                "Tier 1 bağışçısı",
+                "💎",
+                BadgeCategory.SPECIAL
+        );
+
+        createBadgeIfNotFound(
+                "Hami",
+                "DONOR_TIER_2",
+                "Tier 2 bağışçısı",
+                "💍",
+                BadgeCategory.SPECIAL
+        );
+
+        createBadgeIfNotFound(
+                "Büyük Hami",
+                "DONOR_TIER_3",
+                "Tier 3 bağışçısı",
+                "👑",
+                BadgeCategory.SPECIAL
+        );
+
     }
 
     private void createBadgeIfNotFound(String name, String code, String description,
-                                       String icon, BadgeCategory category) {
+                                       String emoji, BadgeCategory category) {
         if (badgeRepository.findByConditionCode(code).isEmpty()) {
             Badge badge = new Badge();
             badge.setName(name);
             badge.setConditionCode(code);
             badge.setDescription(description);
-            badge.setIconUrl("/uploads/badges/" + icon);
+            badge.setIconUrl(emoji); // Emoji kullanıyoruz (iconUrl yerine)
             badge.setCategory(category);
             badgeRepository.save(badge);
-            System.out.println("Rozet oluşturuldu: " + name);
         }
     }
 }

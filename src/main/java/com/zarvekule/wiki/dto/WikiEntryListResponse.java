@@ -3,6 +3,8 @@ package com.zarvekule.wiki.dto;
 import com.zarvekule.wiki.enums.ContentCategory;
 import lombok.Data;
 
+import java.util.Map;
+
 /**
  * Wiki liste görünümü için hafif DTO
  * Pagination performansı için metadata/turkishContent dahil DEĞİL
@@ -20,4 +22,5 @@ public class WikiEntryListResponse {
     private long viewCount;
     private boolean liked;
     private String authorUsername;
+    private Map<String, Object> categoryData;
 }
