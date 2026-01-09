@@ -1,17 +1,17 @@
-package com.zarvekule.blog.service;
+package com.zarvekule.wiki.service;
 
-import com.zarvekule.exceptions.ApiException;
 import com.zarvekule.blog.dto.CommentDto;
-import com.zarvekule.blog.dto.CommentRequest;
-import com.zarvekule.blog.entity.BlogComment;
-import com.zarvekule.blog.entity.BlogEntry;
-import com.zarvekule.blog.repository.BlogCommentRepository;
-import com.zarvekule.blog.repository.BlogEntryRepository;
+import com.zarvekule.exceptions.ApiException;
 import com.zarvekule.gamification.enums.ActionType;
 import com.zarvekule.gamification.service.GamificationService;
 import com.zarvekule.user.entity.User;
 import com.zarvekule.user.mapper.UserMapper;
 import com.zarvekule.user.repository.UserRepository;
+import com.zarvekule.wiki.dto.WikiCommentRequest;
+import com.zarvekule.wiki.entity.WikiComment;
+import com.zarvekule.wiki.entity.WikiEntry;
+import com.zarvekule.wiki.repository.WikiCommentRepository;
+import com.zarvekule.wiki.repository.WikiEntryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,29 +24,29 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
-public class BlogCommentServiceImpl implements BlogCommentService {
+public class WikiCommentServiceImpl implements WikiCommentService {
 
-    private final BlogCommentRepository commentRepository;
-    private final BlogEntryRepository blogRepository;
+    private final WikiCommentRepository commentRepository;
+    private final WikiEntryRepository wikiRepository;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final GamificationService gamificationService; // ✨ ROZET SİSTEMİ
 
     @Override
     @Transactional
-    public void addComment(String username, CommentRequest request) {
+    public void addComment(String username, WikiCommentRequest request) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ApiException("Kullanıcı bulunamadı.", HttpStatus.NOT_FOUND));
 
-        BlogEntry blog = blogRepository.findById(request.getBlogId())
-                .orElseThrow(() -> new ApiException("Blog yazısı bulunamadı.", HttpStatus.NOT_FOUND));
+        WikiEntry wiki = wikiRepository.findById(request.getWikiId())
+                .orElseThrow(() -> new ApiException("Wiki bulunamadı.", HttpStatus.NOT_FOUND));
 
-        BlogComment comment = new BlogComment();
+        WikiComment comment = new WikiComment();
         comment.setContent(request.getContent());
         comment.setUser(user);
-        comment.setBlog(blog);
+        comment.setWiki(wiki);
 
-        // Moderatör veya Admin ise yorumu otomatik onaylanır
+        // Moderatör veya Admin ise yorumu otomatik onayla
         boolean isPrivileged = user.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch(role -> role.equals("ROLE_ADMIN") || role.equals("ROLE_MODERATOR"));
@@ -61,15 +61,15 @@ public class BlogCommentServiceImpl implements BlogCommentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<CommentDto> getCommentsForBlog(Long blogId, Pageable pageable) {
-        return commentRepository.findByBlog_IdAndIsApprovedTrue(blogId, pageable)
+    public Page<CommentDto> getCommentsForWiki(Long wikiId, Pageable pageable) {
+        return commentRepository.findByWiki_IdAndIsApprovedTrue(wikiId, pageable)
                 .map(this::mapToDto);
     }
 
     @Override
     @Transactional
     public void deleteComment(String username, Long commentId) {
-        BlogComment comment = commentRepository.findById(commentId)
+        WikiComment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ApiException("Yorum bulunamadı.", HttpStatus.NOT_FOUND));
 
         User currentUser = userRepository.findByUsername(username)
@@ -92,7 +92,7 @@ public class BlogCommentServiceImpl implements BlogCommentService {
     @Override
     @Transactional
     public void approveComment(String username, Long commentId) {
-        BlogComment comment = commentRepository.findById(commentId)
+        WikiComment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ApiException("Yorum bulunamadı.", HttpStatus.NOT_FOUND));
 
         comment.setApproved(true);
@@ -106,7 +106,7 @@ public class BlogCommentServiceImpl implements BlogCommentService {
                 .map(this::mapToDto);
     }
 
-    private CommentDto mapToDto(BlogComment comment) {
+    private CommentDto mapToDto(WikiComment comment) {
         CommentDto dto = new CommentDto();
         dto.setId(comment.getId());
         dto.setContent(comment.getContent());
