@@ -245,7 +245,7 @@ public class CampaignServiceImpl implements CampaignService {
         }
         auditService.logAction(
                 username,
-                AuditAction.CAMPAIGN_DELETE,
+                AuditAction.CAMPAIGN_DELETED,
                 "CAMPAIGN",
                 campaignId,
                 "Campaign Title: " + campaign.getTitle() + " | Owner: " + campaign.getDungeonMaster().getUsername()

@@ -2,21 +2,45 @@ package com.zarvekule.audit.enums;
 
 public enum AuditAction {
 
+    // User Actions
     USER_BAN,
     USER_UNBAN,
     ROLE_CHANGE,
 
+    // Homebrew Actions
     HOMEBREW_APPROVED,
+    HOMEBREW_REJECTED,
     HOMEBREW_PUBLISHED,
+    HOMEBREW_MOVED_TO_DRAFT,
     HOMEBREW_DELETED,
-    HOMEBREW_REJECT,
-    VENUE_APPROVE,
-    VENUE_REJECT,
-    CAMPAIGN_SUSPEND,
-    CAMPAIGN_DELETE,
+    HOMEBREW_EDITED_BY_MOD,
+    HOMEBREW_COMMENT_DELETED,
 
+    // Wiki Actions
+    WIKI_COMMENT_DELETED,
+    WIKI_COMMENT_APPROVED,
+
+    // Blog Actions
+    BLOG_MOVED_TO_DRAFT,
+    BLOG_METADATA_UPDATED,
+    BLOG_COMMENT_DELETED,
+    BLOG_COMMENT_APPROVED,
+
+    // Guild Actions
+    GUILD_SOFT_BANNED,
+    GUILD_UNBANNED,
+
+    // Campaign Actions
+    CAMPAIGN_SUSPENDED,
+    CAMPAIGN_DELETED,
+
+    // Venue Actions
+    VENUE_APPROVED,
+    VENUE_REJECTED,
+    VENUE_MOVED_TO_DRAFT,
+
+    // System Actions
     LOGIN_FAILED,
     SENSITIVE_DATA_ACCESS,
-
     SYSTEM_CONFIG_CHANGE
 }

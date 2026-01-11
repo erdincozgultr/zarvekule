@@ -36,6 +36,10 @@ public interface HomebrewEntryRepository extends JpaRepository<HomebrewEntry, Lo
             HomebrewCategory category
     );
 
+    Optional<HomebrewEntry> findBySlug(String slug);
+
+    long countByStatus(HomebrewStatus status);
+
     List<HomebrewEntry> findAllByAuthorIdOrderByCreatedAtDesc(Long authorId);
 
     // ============================================

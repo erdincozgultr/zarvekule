@@ -6,6 +6,7 @@ import com.zarvekule.homebrew.enums.HomebrewStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Set;
 
 @Data
@@ -37,4 +38,6 @@ public class HomebrewEntryListResponse {
 
     private LocalDateTime createdAt;
     private LocalDateTime publishedAt;
+
+    private Map<String, Object> categoryData;
 }

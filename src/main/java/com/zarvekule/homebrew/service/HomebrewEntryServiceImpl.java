@@ -157,7 +157,7 @@ public class HomebrewEntryServiceImpl implements HomebrewEntryService {
 
         auditService.logAction(
                 currentUser.getUsername(),
-                AuditAction.HOMEBREW_REJECT,
+                AuditAction.HOMEBREW_REJECTED,
                 "HomebrewEntry",
                 id,
                 "Homebrew silindi: " + entry.getName()

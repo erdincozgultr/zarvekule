@@ -16,6 +16,8 @@ import java.util.Optional;
 @Repository
 public interface BlogEntryRepository extends JpaRepository<BlogEntry, Long> {
 
+    Boolean existsBySlugAndIdNot(String slug, Long blogId);
+
     Page<BlogEntry> findByStatusOrderByPublishedAtDesc(BlogStatus status, Pageable pageable);
 
     Optional<BlogEntry> findBySlugAndStatus(String slug, BlogStatus status);
@@ -38,4 +40,6 @@ public interface BlogEntryRepository extends JpaRepository<BlogEntry, Long> {
     long countByAuthorIdAndCreatedAtAfter(Long authorId, LocalDateTime createdAt);
 
     List<BlogEntry> findTop10ByAuthorIdInOrderByCreatedAtDesc(List<Long> authorIds);
+
+    Page<BlogEntry> findAllByStatus(BlogStatus status, Pageable pageable);
 }

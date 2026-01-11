@@ -4,28 +4,29 @@ import com.zarvekule.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "guilds")
 @Data
 @NoArgsConstructor
 public class Guild {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 100)
     private String name;
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @OneToOne
-    @JoinColumn(name = "leader_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "leader_id", nullable = false)
     private User leader;
 
     @ManyToMany
@@ -34,17 +35,33 @@ public class Guild {
             joinColumns = @JoinColumn(name = "guild_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
-    private Set<User> members = new HashSet<>();
+    private List<User> members = new ArrayList<>();
 
     private int level = 1;
-
     private long xp = 0;
 
     private String bannerUrl;
     private String avatarUrl;
     private String discordWebhookUrl;
 
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
+    // Soft Ban Fields - ADDED FOR MODERATION
+    @Column(name = "is_banned", nullable = false)
+    private boolean isBanned = false;
+
+    @Column(name = "ban_reason", columnDefinition = "TEXT")
+    private String banReason;
+
+    @Column(name = "banned_at")
+    private LocalDateTime bannedAt;
+
+    @Column(name = "banned_by_id")
+    private Long bannedById;
+
+    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime updatedAt;
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

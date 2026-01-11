@@ -8,7 +8,9 @@ import com.zarvekule.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -93,7 +95,7 @@ public class HomebrewEntryMapper {
         dto.setViewCount(entity.getViewCount());
         dto.setLikeCount(entity.getLikeCount());
         dto.setLiked(false); // Service'de set edilecek
-
+        dto.setCategoryData(extractCategoryData(entity));
         dto.setForkCount(entity.getForkCount());
 
         dto.setCreatedAt(entity.getCreatedAt());
@@ -114,5 +116,98 @@ public class HomebrewEntryMapper {
         return entities.stream()
                 .map(this::toListDto)
                 .collect(Collectors.toList());
+    }
+
+    private Map<String, Object> extractCategoryData(HomebrewEntry entry) {
+        Map<String, Object> data = new HashMap<>();
+
+        Map<String, Object> contentData = entry.getContent();
+
+        if (contentData == null || contentData.isEmpty()) {
+            return data;
+        }
+
+        try {
+            switch (entry.getCategory()) {
+                case SPELLS:
+                    if (contentData.containsKey("level")) {
+                        data.put("level", contentData.get("level"));
+                    }
+                    if (contentData.containsKey("school")) {
+                        data.put("school", contentData.get("school"));
+                    }
+                    break;
+
+                case MONSTERS:
+                    if (contentData.containsKey("type")) {
+                        data.put("type", contentData.get("type"));
+                    }
+                    if (contentData.containsKey("challenge_rating")) {
+                        data.put("challenge_rating", contentData.get("challenge_rating"));
+                    }
+                    break;
+
+                case MAGIC_ITEM:
+                    if (contentData.containsKey("rarity")) {
+                        data.put("rarity", contentData.get("rarity"));
+                    }
+                    if (contentData.containsKey("attunement")) {
+                        data.put("attunement", contentData.get("attunement"));
+                    }
+                    break;
+
+                case WEAPON:
+                    if (contentData.containsKey("damage")) {
+                        data.put("damage", contentData.get("damage"));
+                    }
+                    break;
+
+                case ARMOR:
+                    if (contentData.containsKey("armor_class")) {
+                        data.put("armor_class", contentData.get("armor_class"));
+                    }
+                    if (contentData.containsKey("type")) {
+                        data.put("type", contentData.get("type"));
+                    }
+                    break;
+
+                case CLASSES:
+                    if (contentData.containsKey("hit_die")) {
+                        data.put("hit_die", contentData.get("hit_die"));
+                    }
+                    if (contentData.containsKey("primary_ability")) {
+                        data.put("primary_ability", contentData.get("primary_ability"));
+                    }
+                    break;
+
+                case RACES:
+                    if (contentData.containsKey("size")) {
+                        data.put("size", contentData.get("size"));
+                    }
+                    if (contentData.containsKey("speed")) {
+                        data.put("speed", contentData.get("speed"));
+                    }
+                    break;
+
+                case FEATS:
+                    if (contentData.containsKey("prerequisite")) {
+                        data.put("prerequisite", contentData.get("prerequisite"));
+                    }
+                    break;
+
+                case BACKGROUND:
+                    if (contentData.containsKey("skill_proficiencies")) {
+                        data.put("skill_proficiencies", contentData.get("skill_proficiencies"));
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+        } catch (Exception e) {
+
+        }
+
+        return data;
     }
 }
