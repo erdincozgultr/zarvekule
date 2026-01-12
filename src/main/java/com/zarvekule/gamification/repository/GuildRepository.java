@@ -1,6 +1,8 @@
 package com.zarvekule.gamification.repository;
 
 import com.zarvekule.gamification.entity.Guild;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -32,4 +34,6 @@ public interface GuildRepository extends JpaRepository<Guild, Long> {
      * İsmin kullanılıp kullanılmadığını kontrol et
      */
     boolean existsByName(String name);
+
+    Page<Guild> findAllByIsBannedTrue(Pageable pageable);
 }

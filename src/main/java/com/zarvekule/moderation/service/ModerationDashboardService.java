@@ -7,11 +7,24 @@ import com.zarvekule.blog.entity.BlogEntry;
 import com.zarvekule.blog.enums.BlogStatus;
 import com.zarvekule.blog.mapper.BlogEntryMapper;
 import com.zarvekule.blog.repository.BlogEntryRepository;
+import com.zarvekule.campaign.dto.CampaignResponse;
+import com.zarvekule.campaign.entity.Campaign;
+import com.zarvekule.campaign.mapper.CampaignMapper;
+import com.zarvekule.campaign.repository.CampaignRepository;
+import com.zarvekule.gamification.dto.GuildDto;
+import com.zarvekule.gamification.entity.Guild;
+import com.zarvekule.gamification.mapper.GuildMapper;
+import com.zarvekule.gamification.repository.GuildRepository;
 import com.zarvekule.homebrew.dto.HomebrewEntryResponse;
 import com.zarvekule.homebrew.entity.HomebrewEntry;
 import com.zarvekule.homebrew.enums.HomebrewStatus;
 import com.zarvekule.homebrew.mapper.HomebrewEntryMapper;
 import com.zarvekule.homebrew.repository.HomebrewEntryRepository;
+import com.zarvekule.venue.dto.VenueResponse;
+import com.zarvekule.venue.entity.Venue;
+import com.zarvekule.venue.enums.VenueStatus;
+import com.zarvekule.venue.mapper.VenueMapper;
+import com.zarvekule.venue.repository.VenueRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,19 +33,24 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * Moderation Dashboard Service
- * Moderatörlerin içerikleri görüntülemesi için endpoint'ler
- */
 @Service
 @RequiredArgsConstructor
 public class ModerationDashboardService {
 
+    // Repositories
     private final HomebrewEntryRepository homebrewRepository;
-    private final HomebrewEntryMapper homebrewMapper;
     private final BlogEntryRepository blogRepository;
-    private final BlogEntryMapper blogMapper;
+    private final GuildRepository guildRepository;
+    private final CampaignRepository campaignRepository;
+    private final VenueRepository venueRepository;
     private final AuditLogRepository auditLogRepository;
+
+    // Mappers
+    private final HomebrewEntryMapper homebrewMapper;
+    private final BlogEntryMapper blogMapper;
+    private final GuildMapper guildMapper;
+    private final CampaignMapper campaignMapper;
+    private final VenueMapper venueMapper;
 
     // ============================================
     // HOMEBREW
@@ -80,7 +98,7 @@ public class ModerationDashboardService {
     }
 
     /**
-     * Yayında olan blogları getir
+     * Yayınlanmış blogları getir
      */
     @Transactional(readOnly = true)
     public Page<BlogEntrySummary> getPublishedBlogs(Pageable pageable) {
@@ -89,11 +107,65 @@ public class ModerationDashboardService {
     }
 
     // ============================================
-    // AUDIT
+    // GUILD
     // ============================================
 
     /**
-     * Belirli bir içerik için audit log'ları getir
+     * Tüm loncaları getir
+     */
+    @Transactional(readOnly = true)
+    public Page<GuildDto> getAllGuilds(Pageable pageable) {
+        return guildRepository.findAll(pageable)
+                .map(guildMapper::toDto);
+    }
+
+
+    // ============================================
+    // CAMPAIGN
+    // ============================================
+
+    /**
+     * Tüm kampanyaları getir
+     */
+    @Transactional(readOnly = true)
+    public Page<CampaignResponse> getAllCampaigns(Pageable pageable) {
+        return campaignRepository.findAll(pageable)
+                .map(campaignMapper::toResponse);
+    }
+
+    // ============================================
+    // VENUE
+    // ============================================
+
+    /**
+     * Onay bekleyen venue'leri getir
+     */
+    @Transactional(readOnly = true)
+    public Page<VenueResponse> getPendingVenues(Pageable pageable) {
+        return venueRepository.findAllByStatus(VenueStatus.PENDING_APPROVAL, pageable)
+                .map(venueMapper::toResponse);
+    }
+
+    /**
+     * Tüm venue'leri getir (status filter ile)
+     */
+    @Transactional(readOnly = true)
+    public Page<VenueResponse> getAllVenues(VenueStatus status, Pageable pageable) {
+        Page<Venue> venues;
+        if (status != null) {
+            venues = venueRepository.findAllByStatus(status, pageable);
+        } else {
+            venues = venueRepository.findAll(pageable);
+        }
+        return venues.map(venueMapper::toResponse);
+    }
+
+    // ============================================
+    // AUDIT LOG
+    // ============================================
+
+    /**
+     * Belirli target için audit log'ları getir
      */
     @Transactional(readOnly = true)
     public List<AuditLog> getAuditLogs(String targetType, Long targetId) {
@@ -107,4 +179,15 @@ public class ModerationDashboardService {
     public Page<AuditLog> getAllAuditLogs(Pageable pageable) {
         return auditLogRepository.findAll(pageable);
     }
+
+    /**
+     * Yasaklı loncaları getir
+     */
+    @Transactional(readOnly = true)
+    public Page<GuildDto> getBannedGuilds(Pageable pageable) {
+        return guildRepository.findAllByIsBannedTrue(pageable)
+                .map(guildMapper::toDto);
+    }
+
+
 }
