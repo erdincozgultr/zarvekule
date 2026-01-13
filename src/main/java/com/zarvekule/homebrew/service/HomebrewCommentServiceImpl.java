@@ -6,12 +6,13 @@ import com.zarvekule.gamification.enums.ActionType;
 import com.zarvekule.gamification.service.GamificationService;
 import com.zarvekule.homebrew.dto.HomebrewCommentRequest;
 import com.zarvekule.homebrew.entity.HomebrewComment;
+import com.zarvekule.homebrew.entity.HomebrewEntry;
 import com.zarvekule.homebrew.repository.HomebrewCommentRepository;
+import com.zarvekule.homebrew.repository.HomebrewEntryRepository;
 import com.zarvekule.user.entity.User;
 import com.zarvekule.user.mapper.UserMapper;
 import com.zarvekule.user.repository.UserRepository;
 import com.zarvekule.wiki.entity.WikiEntry;
-import com.zarvekule.wiki.repository.WikiEntryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,10 +28,10 @@ import java.util.Objects;
 public class HomebrewCommentServiceImpl implements HomebrewCommentService {
 
     private final HomebrewCommentRepository commentRepository;
-    private final WikiEntryRepository wikiRepository;
     private final UserRepository userRepository;
+    private final HomebrewEntryRepository homebrewRepository; // ✅ wikiRepository değil!
     private final UserMapper userMapper;
-    private final GamificationService gamificationService; // ✨ ROZET SİSTEMİ
+    private final GamificationService gamificationService;
 
     @Override
     @Transactional
@@ -38,13 +39,14 @@ public class HomebrewCommentServiceImpl implements HomebrewCommentService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ApiException("Kullanıcı bulunamadı.", HttpStatus.NOT_FOUND));
 
-        WikiEntry homebrew = wikiRepository.findById(request.getHomebrewId())
+        // ✅ FIX: HomebrewEntry kullan
+        HomebrewEntry homebrew = homebrewRepository.findById(request.getHomebrewId())
                 .orElseThrow(() -> new ApiException("Homebrew bulunamadı.", HttpStatus.NOT_FOUND));
 
         HomebrewComment comment = new HomebrewComment();
         comment.setContent(request.getContent());
         comment.setUser(user);
-        comment.setHomebrew(homebrew);
+        comment.setHomebrew();
 
         // Moderatör veya Admin ise yorumu otomatik onayla
         boolean isPrivileged = user.getAuthorities().stream()

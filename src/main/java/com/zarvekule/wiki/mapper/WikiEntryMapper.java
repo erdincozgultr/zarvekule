@@ -47,11 +47,14 @@ public class WikiEntryMapper {
         if (entity.getAuthor() != null) {
             dto.setAuthor(new UserSummaryDto(
                     entity.getAuthor().getUsername(),
-                    entity.getAuthor().getDisplayName() != null ?
-                            entity.getAuthor().getDisplayName() : entity.getAuthor().getUsername(),
+                    entity.getAuthor().getDisplayName() != null ? entity.getAuthor().getDisplayName() : entity.getAuthor().getUsername(),
                     entity.getAuthor().getAvatarUrl(),
-                    entity.getAuthor().getTitle() != null ?
-                            entity.getAuthor().getTitle() : "Gezgin"
+                    entity.getAuthor().getTitle() != null ? entity.getAuthor().getTitle() : "Gezgin",
+                    entity.getAuthor().getRoles() != null
+                            ? entity.getAuthor().getRoles().stream()
+                            .map(role -> role.getName().name())
+                            .collect(Collectors.toList())
+                            : null
             ));
         }
 

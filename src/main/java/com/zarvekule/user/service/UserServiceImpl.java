@@ -53,7 +53,12 @@ public class UserServiceImpl implements UserService {
                 user.getUsername(),
                 user.getDisplayName() != null ? user.getDisplayName() : user.getUsername(),
                 user.getAvatarUrl(),
-                user.getTitle() != null ? user.getTitle() : "Gezgin"
+                user.getTitle() != null ? user.getTitle() : "Gezgin",
+                user.getRoles() != null
+                        ? user.getRoles().stream()
+                        .map(role -> role.getName().name())
+                        .collect(Collectors.toList())
+                        : null
         );
     }
 
