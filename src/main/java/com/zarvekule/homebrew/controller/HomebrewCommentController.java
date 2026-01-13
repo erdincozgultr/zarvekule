@@ -22,10 +22,6 @@ public class HomebrewCommentController {
 
     private final HomebrewCommentService commentService;
 
-    /**
-     * Homebrew için yorumları getir (pagination)
-     * GET /api/homebrew-comments/homebrew/{homebrewId}?page=0&size=20
-     */
     @GetMapping("/homebrew/{homebrewId}")
     public ResponseEntity<Page<CommentDto>> getComments(
             @PathVariable Long homebrewId,
@@ -36,10 +32,6 @@ public class HomebrewCommentController {
         return ResponseEntity.ok(commentService.getCommentsForHomebrew(homebrewId, pageable));
     }
 
-    /**
-     * Yorum ekle (AUTH)
-     * POST /api/homebrew-comments
-     */
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> addComment(
@@ -50,10 +42,6 @@ public class HomebrewCommentController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    /**
-     * Yorum sil (AUTH - kendi yorumu veya ADMIN/MODERATOR)
-     * DELETE /api/homebrew-comments/{id}
-     */
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteComment(
@@ -64,10 +52,6 @@ public class HomebrewCommentController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Yorum onayla (MODERATOR/ADMIN)
-     * PATCH /api/homebrew-comments/{id}/approve
-     */
     @PatchMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN')")
     public ResponseEntity<Void> approveComment(
@@ -78,10 +62,6 @@ public class HomebrewCommentController {
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * Onay bekleyen yorumlar (MODERATOR/ADMIN)
-     * GET /api/homebrew-comments/pending?page=0&size=20
-     */
     @GetMapping("/pending")
     @PreAuthorize("hasAnyRole('MODERATOR', 'ADMIN')")
     public ResponseEntity<Page<CommentDto>> getPendingComments(

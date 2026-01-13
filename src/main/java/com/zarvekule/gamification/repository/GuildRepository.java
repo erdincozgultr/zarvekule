@@ -30,10 +30,14 @@ public interface GuildRepository extends JpaRepository<Guild, Long> {
      */
     Optional<Guild> findByName(String name);
 
+
+
     /**
      * İsmin kullanılıp kullanılmadığını kontrol et
      */
     boolean existsByName(String name);
 
     Page<Guild> findAllByIsBannedTrue(Pageable pageable);
+
+    Page<Guild> findAllByIsBannedFalse(Pageable pageable);
 }
